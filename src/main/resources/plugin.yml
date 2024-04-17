@@ -1,7 +1,7 @@
-name: AntiCheatReloaded
-author: Rammelkast
-description: AntiCheatReloaded helps easily identify and block malicious players on your server.
-main: com.rammelkast.anticheatreloaded.AntiCheatReloaded
+name: AntiCheatRevolutions
+author: CitraMC
+description: AntiCheatRevolutions helps easily identify and block malicious players on your server.
+main: com.citramc.anticheatrevolutions.AntiCheatRevolutions
 api-version: 1.13
 depend: [ProtocolLib]
 softdepend: [Floodgate, floodgate]
@@ -9,7 +9,7 @@ startup: postworld
 version: ${project.build.version}
 commands:
   anticheat:
-    description: Control and view info about AntiCheatReloaded
+    description: Control and view info about AntiCheatRevolutions
     usage: /anticheat help
     aliases: acr
 permissions:

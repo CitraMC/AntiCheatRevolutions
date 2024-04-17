@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.rammelkast.anticheatreloaded</groupId>
-    <artifactId>AntiCheatReloaded</artifactId>
-    <version>1.11.0-PRE</version>
-    <name>AntiCheatReloaded</name>
-    <url>https://www.spigotmc.org/resources/anticheatreloaded.23799/</url>
+    <groupId>com.citramc.anticheatrevolutions</groupId>
+    <artifactId>AntiCheatRevolutions</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>AntiCheatRevolutions</name>
+    <url>https://github.com/CitraMC/AntiCheatRevolutions</url>
     <properties>
         <project.build.version>${project.version}</project.build.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -56,15 +56,15 @@
                             <relocations>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
-                                    <shadedPattern>com.rammelkast.anticheatreloaded.util</shadedPattern>
+                                    <shadedPattern>com.citramc.anticheatrevolutions.util</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.cryptomorin.xseries</pattern>
-                                    <shadedPattern>com.rammelkast.anticheatreloaded.util</shadedPattern>
+                                    <shadedPattern>com.citramc.anticheatrevolutions.util</shadedPattern>
                                 </relocation>
 								<relocation>
                                     <pattern>com.github.juliarn.npc</pattern>
-                                    <shadedPattern>com.rammelkast.anticheatreloaded.util.npc</shadedPattern>
+                                    <shadedPattern>com.citramc.anticheatrevolutions.util.npc</shadedPattern>
                                 </relocation>
                             </relocations>
                             <filters>
@@ -80,7 +80,7 @@
                 </executions>
             </plugin>
         </plugins>
-        <finalName>AntiCheatReloaded</finalName>
+        <finalName>AntiCheatRevolutions</finalName>
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>4.8.0-SNAPSHOT</version>
+            <version>4.8.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

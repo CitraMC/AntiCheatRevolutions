@@ -1,4 +1,4 @@
-# AntiCheatReloaded language file
+# AntiCheatRevolutions language file
 # The alert message when a player enters a higher group
 ALERT:
 - '&6&lACR &8> &7%player% has just entered the %group% hack group.'

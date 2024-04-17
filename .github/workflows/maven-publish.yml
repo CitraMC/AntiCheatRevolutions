@@ -23,4 +23,4 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2.3.1
       with:
-        path: target/AntiCheatReloaded.jar
+        path: target/AntiCheatRevolutions.jar
