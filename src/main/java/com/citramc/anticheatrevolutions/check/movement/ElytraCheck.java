@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +33,7 @@ import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.util.Distance;
 import com.citramc.anticheatrevolutions.util.MinecraftVersion;
 import com.citramc.anticheatrevolutions.util.Utilities;
+import com.citramc.anticheatrevolutions.util.VersionLib;
 
 public final class ElytraCheck {
 
@@ -39,6 +41,10 @@ public final class ElytraCheck {
 	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
 
 	public static CheckResult runCheck(final Player player, final Distance distance) {
+		if (!MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return PASS;
+		}
+		
 		// Not relevant
 		if (Utilities.isNearWater(player)) {
 			return PASS;
@@ -53,7 +59,7 @@ public final class ElytraCheck {
 			return PASS;
 		}
 
-		if (player.isFlying() || player.hasPotionEffect(PotionEffectType.LEVITATION) || !player.isGliding()) {
+		if (player.isFlying() || player.hasPotionEffect(PotionEffectType.LEVITATION) || !VersionLib.isGliding(player)) {
 			JUMP_Y_VALUE.remove(uuid);
 			return PASS;
 		}

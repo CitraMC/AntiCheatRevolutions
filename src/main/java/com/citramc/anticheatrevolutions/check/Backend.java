@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +49,7 @@ import com.citramc.anticheatrevolutions.manage.AntiCheatManager;
 import com.citramc.anticheatrevolutions.util.Distance;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
+import com.citramc.anticheatrevolutions.util.VersionLib;
 
 public class Backend {
 	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
@@ -206,7 +208,7 @@ public class Backend {
 				&& !Utilities.isClimbableBlock(player.getEyeLocation().getBlock())
 				&& !Utilities.isClimbableBlock(player.getLocation().clone().add(0, -0.98, 0).getBlock())
 				&& !Utilities.isNearClimbable(player)
-				&& !player.isGliding()) {
+				&& !VersionLib.isGliding(player)) {
 			return new CheckResult(CheckResult.Result.FAILED,
 					"tried to climb a non-climbable block (" + player.getLocation().getBlock().getType() + ")");
 		} else {

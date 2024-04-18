@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +39,7 @@ import com.citramc.anticheatrevolutions.check.CheckResult.Result;
 import com.citramc.anticheatrevolutions.config.providers.Checks;
 import com.citramc.anticheatrevolutions.util.Distance;
 import com.citramc.anticheatrevolutions.util.Friction;
+import com.citramc.anticheatrevolutions.util.MinecraftVersion;
 import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
@@ -66,6 +68,10 @@ public final class SpeedCheck {
 	 * TODO fix falses with entity collisions
 	 */
 	public static CheckResult checkPredict(final Player player, final Location movingTowards) {
+		if (!MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return PASS;
+		}
+		
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
 		if (!checksConfig.isSubcheckEnabled(CheckType.SPEED, "predict")) {
 			return PASS;

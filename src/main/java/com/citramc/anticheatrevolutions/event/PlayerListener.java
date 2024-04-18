@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,6 +80,7 @@ import com.citramc.anticheatrevolutions.util.Permission;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 import com.citramc.anticheatrevolutions.util.VersionLib;
+import com.comphenix.protocol.utility.MinecraftVersion;
 
 public final class PlayerListener extends EventListener {
 
@@ -292,8 +294,16 @@ public final class PlayerListener extends EventListener {
 		final Player player = event.getPlayer();
 		final PlayerInventory inv = player.getInventory();
 		if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			final ItemStack itemInHand = ((event.getHand() == EquipmentSlot.HAND) ? inv.getItemInMainHand()
-					: inv.getItemInOffHand());
+			ItemStack itemInHand;
+			if (MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+				if (event.getHand() == EquipmentSlot.HAND) {
+					itemInHand = inv.getItemInMainHand();
+				} else {
+					itemInHand = inv.getItemInOffHand();
+				}
+			} else {
+				itemInHand = inv.getItemInHand();
+			}
 
 			if (itemInHand.getType() == Material.BOW) {
 				getBackend().logBowWindUp(player);
@@ -303,7 +313,7 @@ public final class PlayerListener extends EventListener {
 
 			if (itemInHand.getType() == XMaterial.FIREWORK_ROCKET.parseMaterial()) {
 				ElytraCheck.JUMP_Y_VALUE.remove(player.getUniqueId());
-				if (player.isGliding()) {
+				if (VersionLib.isGliding(player)) {
 					ElytraCheck.JUMP_Y_VALUE.put(player.getUniqueId(), 9999.99D);
 				}
 			}

@@ -61,7 +61,17 @@ public class VersionLib {
 	}
 
 	public static boolean isFlying(final Player player) {
-		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || player.isGliding() || player.hasPotionEffect(PotionEffectType.LEVITATION)
+		boolean hasLevitationEffect = false;
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			for (PotionEffect effect : player.getActivePotionEffects()) {
+				if (!VersionLib.isLevitationEffect(effect)) {
+					continue;
+				}
+				hasLevitationEffect = true;
+				break;
+			}
+		}
+		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || VersionLib.isGliding(player) || hasLevitationEffect
 				|| AntiCheatRevolutions.getManager().getBackend().justLevitated(player);
 	}
 
@@ -80,7 +90,7 @@ public class VersionLib {
 	}
 
 	public static boolean isFrostWalk(final Player player) {
-		if (player.getInventory().getBoots() == null) {
+		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE) || player.getInventory().getBoots() == null) {
 			return false;
 		}
 		return player.getInventory().getBoots().containsEnchantment(Enchantment.FROST_WALKER);
@@ -94,6 +104,9 @@ public class VersionLib {
 	}
 
 	public static ItemStack getItemInHand(final Player player) {
+		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return player.getInventory().getItemInHand();
+		}
 		return player.getInventory().getItemInMainHand();
 	}
 
@@ -124,16 +137,24 @@ public class VersionLib {
 	}
 
 	public static boolean isGliding(final Player player) {
+		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return false;
+		}
 		return player.isGliding();
 	}
 
 	public static boolean isLevitationEffect(final PotionEffect effect) {
+		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return false;
+		}
 		return effect.getType().equals(PotionEffectType.LEVITATION);
 	}
 
 	public static int getPotionLevel(final Player player, final PotionEffectType type) {
-		if (player.hasPotionEffect(type)) {
-			return player.getPotionEffect(type).getAmplifier() + 1;
+		for (PotionEffect effect : player.getActivePotionEffects()) {
+			if (effect.getType().equals(type)) {
+				return effect.getAmplifier() + 1;
+			}
 		}
 		return 0;
 	}
@@ -146,7 +167,7 @@ public class VersionLib {
 	}
 
 	static {
-		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_20", "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12" });
+		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_20", "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12", "v1_11", "v1_10", "v1_9", "v1_8" });
 		CURRENT_VERSION = MinecraftVersion.getCurrentVersion();
 	}
 }

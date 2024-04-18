@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -31,7 +31,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import com.google.common.collect.EvictingQueue;
@@ -251,7 +250,7 @@ public final class KillAuraCheck {
 		// TODO this does not work on 1.12.2
 		// Either we finally drop 1.12.2 as well, or we create a workaround
 		// For now we just skip if server version is 1.12.2
-		if (MinecraftVersion.getCurrentVersion().getMinor() <= 12) {
+		if (!MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
 			return PASS;
 		}
 			
@@ -278,7 +277,7 @@ public final class KillAuraCheck {
 		final Location eyes = player.getEyeLocation().clone();
 		final World world = player.getWorld();
 		final double expansion = checksConfig.getDouble(CheckType.KILLAURA, "throughWalls", "expand");
-		final RayTraceResult result = world.rayTrace(eyes, eyes.getDirection(), RAY_LENGTH, FluidCollisionMode.NEVER,
+		final org.bukkit.util.RayTraceResult result = world.rayTrace(eyes, eyes.getDirection(), RAY_LENGTH, org.bukkit.FluidCollisionMode.NEVER,
 				true, expansion, entity -> entity.equals(target));
 		if (player.getLocation().toVector().clone().setY(0.0)
 				.distance(target.getLocation().toVector().clone().setY(0)) <= expansion) {

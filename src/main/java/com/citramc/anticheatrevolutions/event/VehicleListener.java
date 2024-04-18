@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@ import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
+import com.citramc.anticheatrevolutions.util.MinecraftVersion;
 
 public class VehicleListener extends EventListener {
 
@@ -50,8 +52,17 @@ public class VehicleListener extends EventListener {
 
 	@EventHandler(ignoreCancelled = true)
 	public void onVehicleDestroy(VehicleDestroyEvent event) {
-		if (!event.getVehicle().getPassengers().isEmpty()) {
-			for (Entity entity : event.getVehicle().getPassengers()) {
+		if (MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.EXPLORATION_UPDATE)) {
+			if (!event.getVehicle().getPassengers().isEmpty()) {
+				for (Entity entity : event.getVehicle().getPassengers()) {
+					if (entity instanceof Player) {
+						getBackend().logEnterExit((Player) entity);
+					}
+				}
+			}
+		} else {
+			if (!event.getVehicle().getPassenger().isEmpty()) {
+				Entity entity = event.getVehicle().getPassenger();
 				if (entity instanceof Player) {
 					getBackend().logEnterExit((Player) entity);
 				}

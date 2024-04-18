@@ -44,7 +44,7 @@ flight:
     accountForTeleports: 300
     # Amount of illegal moves before flagging
     vlBeforeFlag: 5
-# ElytraFly check settings
+# ElytraFly check settings (1.9+)
 # Checks for illegal upward elytra movement
 elytrafly:
   # Should this check be enabled?
@@ -52,7 +52,7 @@ elytrafly:
 # Speed check settings
 # Checks if a player moves too fast
 speed:
-  # Checks movement speed through prediction
+  # Checks movement speed through prediction (1.9+)
   # Debugs as 'moved unexpectedly'
   predict:
     # Should this part of the check be enabled?
@@ -205,7 +205,7 @@ killaura:
   repeatedAim:
     # Should this part of the check be enabled?
     enabled: true
-  # Checks if the player is hitting through objects
+  # Checks if the player is hitting through objects (1.13+)
   # Debugs as 'hit through object'
   throughWalls:
     # Should this part of the check be enabled?
