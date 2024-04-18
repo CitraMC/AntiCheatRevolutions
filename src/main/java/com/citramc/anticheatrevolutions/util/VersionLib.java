@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,7 +146,7 @@ public class VersionLib {
 	}
 
 	static {
-		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12" });
+		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12" });
 		CURRENT_VERSION = MinecraftVersion.getCurrentVersion();
 	}
 }

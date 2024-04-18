@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +27,7 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.injector.server.TemporaryPlayer;
+import com.comphenix.protocol.injector.temporary.TemporaryPlayer;
 import com.comphenix.protocol.wrappers.EnumWrappers.PlayerDigType;
 import com.citramc.anticheatrevolutions.check.movement.NoSlowCheck;
 import com.citramc.anticheatrevolutions.check.packet.BadPacketsCheck;

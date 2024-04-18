@@ -45,6 +45,36 @@ public class MinecraftVersion implements Comparable<MinecraftVersion>, Serializa
 	private static final Pattern VERSION_PATTERN = Pattern.compile(".*\\(.*MC.\\s*([a-zA-z0-9\\-.]+).*");
 
 	/**
+	 * Version 1.20.4 - the decorated pot update
+	 */
+	public static final MinecraftVersion v1_20_4 = new MinecraftVersion("1.20.4");
+ 
+	/**
+	 * Version 1.20.2 - the update that added the configuration protocol phase.
+	 */
+	public static final MinecraftVersion CONFIG_PHASE_PROTOCOL_UPDATE = new MinecraftVersion("1.20.2");
+	 
+	/**
+	 * Version 1.20 - the trails and tails update
+	 */
+	public static final MinecraftVersion TRAILS_AND_TAILS = new MinecraftVersion("1.20");
+ 
+	/**
+	 * Version 1.19.4 - the rest of the feature preview
+	 */
+	public static final MinecraftVersion FEATURE_PREVIEW_2 = new MinecraftVersion("1.19.4");
+ 
+	/**
+	 * Version 1.19.3 - introducing feature preview
+	 */
+	public static final MinecraftVersion FEATURE_PREVIEW_UPDATE = new MinecraftVersion("1.19.3");
+	 
+	/**
+	 * Version 1.19 - the wild update
+	 */
+	public static final MinecraftVersion WILD_UPDATE = new MinecraftVersion("1.19");
+
+	/**
 	 * Version 1.18 - caves and cliffs part 2
 	 */
 	public static final MinecraftVersion CAVES_CLIFFS_2 = new MinecraftVersion("1.18");
