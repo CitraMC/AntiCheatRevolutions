@@ -162,7 +162,7 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 			@Override
 			public void run() {
 				try {
-					final Metrics metrics = new Metrics(AntiCheatRevolutions.this, 202);
+					final Metrics metrics = new Metrics(AntiCheatRevolutions.this, 21647);
 					metrics.addCustomChart(new SingleLineChart("cheaters_kicked", new Callable<Integer>() {
 						@Override
 						public Integer call() throws Exception {

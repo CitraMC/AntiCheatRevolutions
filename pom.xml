@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.citramc.anticheatrevolutions</groupId>
     <artifactId>AntiCheatRevolutions</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>AntiCheatRevolutions</name>
     <url>https://github.com/CitraMC/AntiCheatRevolutions</url>
     <properties>
