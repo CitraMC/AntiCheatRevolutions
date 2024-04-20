@@ -62,7 +62,7 @@ public final class BadPacketsCheck {
 		final MovementManager movementManager = AntiCheatRevolutions.getManager().getUserManager()
 				.getUser(player.getUniqueId()).getMovementManager();
 		if (user.isLagging() || tps < checksConfig.getDouble(CheckType.BADPACKETS, "minimumTps")
-				|| (System.currentTimeMillis() - movementManager.lastTeleport <= checksConfig
+				|| (System.currentTimeMillis() - movementManager.getLastTeleport() <= checksConfig
 						.getInteger(CheckType.BADPACKETS, "teleportCompensation"))) {
 			return;
 		}

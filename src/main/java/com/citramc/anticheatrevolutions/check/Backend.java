@@ -502,8 +502,8 @@ public class Backend {
 	}
 
 	public void logTeleport(final Player player) {
-		manager.getUserManager().getUser(player.getUniqueId()).getMovementManager().lastTeleport = System
-				.currentTimeMillis();
+		manager.getUserManager().getUser(player.getUniqueId()).getMovementManager().setLastTeleport(System
+				.currentTimeMillis());
 		/* Data for fly/speed should be reset */
 		NoFallCheck.VIOLATIONS.remove(player.getUniqueId());
 		ElytraCheck.JUMP_Y_VALUE.remove(player.getUniqueId());

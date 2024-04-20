@@ -184,12 +184,12 @@ public final class PlayerListener extends EventListener {
 		}
 
 		// Part of Velocity check
-		if (!user.getMovementManager().onGround) {
+		if (!user.getMovementManager().isOnGround()) {
 			return;
 		}
 
 		final double motionY = velocity.getY();
-		user.getMovementManager().velocityExpectedMotionY = motionY;
+		user.getMovementManager().setVelocityExpectedMotionY(motionY);
 		// End part of Velocity check
 
 		MANAGER.addEvent(event.getEventName(), event.getHandlers().getRegisteredListeners());

@@ -46,13 +46,13 @@ public final class VelocityCheck {
 		final int minimumPercentage = checksConfig.getInteger(CheckType.VELOCITY, "minimumPercentage");
 		final int vlBeforeFlag = checksConfig.getInteger(CheckType.VELOCITY, "vlBeforeFlag");
 		
-		if (movementManager.velocityExpectedMotionY > 0 && !movementManager.onGround) {
-			double percentage = (movementManager.motionY / movementManager.velocityExpectedMotionY) * 100;
+		if (movementManager.getVelocityExpectedMotionY() > 0 && !movementManager.isOnGround()) {
+			double percentage = (movementManager.getMotionY() / movementManager.getVelocityExpectedMotionY()) * 100;
 			if (percentage < 0) {
 				percentage = 0;
 			}
 			// Reset expected Y motion
-			movementManager.velocityExpectedMotionY = 0;
+			movementManager.setVelocityExpectedMotionY(0);
 			if (percentage < minimumPercentage) {
 				final int vl = VIOLATIONS.getOrDefault(player.getUniqueId(), 0) + 1;
 				VIOLATIONS.put(player.getUniqueId(), vl);
@@ -62,8 +62,8 @@ public final class VelocityCheck {
 			} else {
 				VIOLATIONS.remove(player.getUniqueId());
 			}
-		} else if (movementManager.airTicks > 5 && movementManager.velocityExpectedMotionY > 0) {
-			movementManager.velocityExpectedMotionY = 0;
+		} else if (movementManager.getAirTicks() > 5 && movementManager.getVelocityExpectedMotionY() > 0) {
+			movementManager.setVelocityExpectedMotionY(0);
 		}
 		return PASS;
 	}

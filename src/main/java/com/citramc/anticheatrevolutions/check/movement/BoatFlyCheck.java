@@ -43,8 +43,8 @@ public final class BoatFlyCheck {
 	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
 
 	public static CheckResult runCheck(final Player player, final MovementManager movementManager, final Location to) {
-		if (movementManager.motionY <= 1E-3
-				|| (System.currentTimeMillis() - movementManager.lastTeleport <= 150) || VersionLib.isFlying(player)
+		if (movementManager.getMotionY() <= 1E-3
+				|| (System.currentTimeMillis() - movementManager.getLastTeleport() <= 150) || VersionLib.isFlying(player)
 				|| !player.isInsideVehicle()) {
 			return PASS;
 		}
@@ -60,7 +60,7 @@ public final class BoatFlyCheck {
 			int violations = VIOLATIONS.getOrDefault(uuid, 1);
 			if (violations++ >= checksConfig.getInteger(CheckType.BOATFLY, "vlBeforeFlag")) {
 				violations = 0;
-				return new CheckResult(Result.FAILED, "tried to fly in a boat (mY=" + movementManager.motionY
+				return new CheckResult(Result.FAILED, "tried to fly in a boat (mY=" + movementManager.getMotionY()
 						+ ", bottom=" + bottom.getType().name().toLowerCase() + ")");
 			}
 			VIOLATIONS.put(uuid, violations);

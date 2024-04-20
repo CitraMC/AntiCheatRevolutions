@@ -53,7 +53,7 @@ public final class ElytraCheck {
 		final UUID uuid = player.getUniqueId();
 		if (distance.getYDifference() > AntiCheatRevolutions.getManager().getBackend().getMagic().TELEPORT_MIN()
 				|| System.currentTimeMillis() - AntiCheatRevolutions.getManager().getUserManager().getUser(uuid)
-						.getMovementManager().lastTeleport <= 500) {
+						.getMovementManager().getLastTeleport() <= 500) {
 			// This was a teleport, so skip check.
 			JUMP_Y_VALUE.remove(uuid);
 			return PASS;

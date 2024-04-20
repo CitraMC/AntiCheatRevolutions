@@ -26,101 +26,148 @@ import org.bukkit.potion.PotionEffectType;
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public final class MovementManager {
 
 	// Ticks in air
-	public int airTicks = 0;
+	@Getter
+	private int airTicks = 0;
 	// Ticks on ground
-	public int groundTicks = 0;
+	@Getter
+	private int groundTicks = 0;
 	// Ticks on ice
-	public int iceTicks = 0;
+	@Getter
+	private int iceTicks = 0;
 	// Ticks on slime
-	public int slimeTicks = 0;
+	@Getter
+	private int slimeTicks = 0;
 	// Ticks in air before last grounded moment
-	public int airTicksBeforeGrounded = 0;
+	@Getter
+	private int airTicksBeforeGrounded = 0;
 	// Ticks influenced by ice
-	public int iceInfluenceTicks = 0;
+	@Getter
+	private int iceInfluenceTicks = 0;
 	// Ticks influenced by slime
-	public int slimeInfluenceTicks = 0;
+	@Getter
+	private int slimeInfluenceTicks = 0;
 	// Ticks influenced by soil
-	public int soilInfluenceTicks = 0;
+	@Getter
+	private int soilInfluenceTicks = 0;
 	// Y motion of the movement
-	public double motionY;
+	@Getter
+	private double motionY;
 	// Previous Y motion of the movement
-	public double lastMotionY;
+	@Getter
+	private double lastMotionY;
 	// Horizontal distance of movement
-	public double distanceXZ;
+	@Getter
+	private double distanceXZ;
 	// Horizontal distance on x-axis of movement
-	public double distanceX;
+	@Getter
+	private double distanceX;
 	// Horizontal distance on z-axis of movement
-	public double distanceZ;
+	@Getter
+	private double distanceZ;
 	// Previous horizontal distance of movement
-	public double lastDistanceXZ;
+	@Getter
+	private double lastDistanceXZ;
 	// Previous horizontal distance on x-axis of movement
-	public double lastDistanceX;
+	@Getter
+	private double lastDistanceX;
 	// Previous horizontal distance on z-axis of movement
-	public double lastDistanceZ;
+	@Getter
+	private double lastDistanceZ;
 	// Delta pitch
 	@Getter
-	public float deltaPitch;
+	private float deltaPitch;
 	// Delta yaw
-	public float deltaYaw;
+	@Getter
+	private float deltaYaw;
 	// Previous delta pitch
 	@Getter
-	public float lastDeltaPitch;
+	private float lastDeltaPitch;
 	// Previous delta yaw
-	public float lastDeltaYaw;
+	@Getter
+	private float lastDeltaYaw;
 	// If the player touched the ground again this tick
-	public boolean touchedGroundThisTick = false;
+	@Getter
+	private boolean touchedGroundThisTick = false;
 	// Last recorded distance
-	public Distance lastDistance = new Distance();
+	@Getter
+	private Distance lastDistance = new Distance();
 	// Movement acceleration
-	public double acceleration;
+	@Getter
+	private double acceleration;
 	// Last movement acceleration
-	public double lastAcceleration;
+	@Getter
+	private double lastAcceleration;
 	// Is the block above solid
-	public boolean topSolid;
+	@Getter
+	private boolean topSolid;
 	// Is the block below solid
-	public boolean bottomSolid;
+	@Getter
+	private boolean bottomSolid;
 	// If the current movement is up a slab or stair
-	public boolean halfMovement;
+	@Getter
+	private boolean halfMovement;
 	// If the player is on the ground (determined clientside!)
-	public boolean onGround;
+	@Getter
+	private boolean onGround;
 	// If the player was on the ground (determined clientside!)
-	public boolean wasOnGround;
+	@Getter
+	private boolean wasOnGround;
 	// Ticks counter for last halfMovement
-	public int halfMovementHistoryCounter = 0;
+	@Getter
+	private int halfMovementHistoryCounter = 0;
 	// Time of last teleport
-	public long lastTeleport;
+	@Getter
+	@Setter
+	private long lastTeleport;
 	// Elytra effect ticks
-	public int elytraEffectTicks;
+	@Getter
+	private int elytraEffectTicks;
 	// Used by Velocity check, represents the currently expected Y motion
-	public double velocityExpectedMotionY;
+	@Getter
+	@Setter
+	private double velocityExpectedMotionY;
 	// Used by Velocity check, represents the currently expected XZ motion
-	public double velocityExpectedMotionXZ;
+	@Getter
+	private double velocityExpectedMotionXZ;
 	// Amount of ticks a player is sneaking
-	public int sneakingTicks;
+	@Getter
+	private int sneakingTicks;
 	// Ticks counter after being near a liquid
-	public int nearLiquidTicks;
+	@Getter
+	private int nearLiquidTicks;
 	// Ticks of player blocking
-	public int blockingTicks;
+	@Getter
+	private int blockingTicks;
 	// If the player has a speed effect
-	public boolean hasSpeedEffect = false;
+	@Getter
+	private boolean hasSpeedEffect = false;
 	// If the player had speed effect previous tick
-	public boolean hadSpeedEffect = false;
+	@Getter
+	private boolean hadSpeedEffect = false;
 	// Riptiding ticks
-	public int riptideTicks;
+	@Getter
+	private int riptideTicks;
 	// Time of last update
-	public long lastUpdate;
+	@Getter
+	private long lastUpdate;
 	// Last location
-	public Location lastLocation;
+	@Getter
+	private Location lastLocation;
 	
 	/**
 	 * Used by prediction speed check
 	 */
-	public float friction;
-	public double adjusted;
+	@Getter
+	@Setter
+	private float friction;
+	@Getter
+	@Setter
+	private double adjusted;
 
 	@SuppressWarnings("deprecation")
 	public void handle(final Player player, final Location from, final Location to, final Distance distance) {

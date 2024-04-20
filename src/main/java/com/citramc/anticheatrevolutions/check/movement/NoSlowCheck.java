@@ -62,7 +62,7 @@ public final class NoSlowCheck {
 		final long difference = time - lastRelease;
 		final long minimumDifference = checksConfig.getInteger(CheckType.NOSLOW, "minimumDifference");
 		if (difference < minimumDifference
-				&& movementManager.distanceXZ >= checksConfig.getDouble(CheckType.NOSLOW, "minimumDistXZ")) {
+				&& movementManager.getDistanceXZ() >= checksConfig.getDouble(CheckType.NOSLOW, "minimumDistXZ")) {
 			int violations = VIOLATIONS.getOrDefault(uuid, 1);
 			if (violations++ >= checksConfig.getInteger(CheckType.NOSLOW, "vlBeforeFlag")) {
 				violations = 0;

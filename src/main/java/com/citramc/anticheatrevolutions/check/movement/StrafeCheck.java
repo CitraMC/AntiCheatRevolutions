@@ -60,13 +60,13 @@ public final class StrafeCheck {
 
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
 
-		if (System.currentTimeMillis() - movementManager.lastTeleport <= checksConfig.getInteger(CheckType.STRAFE,
-				"accountForTeleports") || movementManager.elytraEffectTicks >= 20
-				|| movementManager.halfMovementHistoryCounter >= 20 || Utilities.couldBeOnBoat(player, 0.5, false)) {
+		if (System.currentTimeMillis() - movementManager.getLastTeleport() <= checksConfig.getInteger(CheckType.STRAFE,
+				"accountForTeleports") || movementManager.getElytraEffectTicks() >= 20
+				|| movementManager.getHalfMovementHistoryCounter() >= 20 || Utilities.couldBeOnBoat(player, 0.5, false)) {
 			return PASS;
 		}
 
-		final Vector oldAcceleration = new Vector(movementManager.lastDistanceX, 0, movementManager.lastDistanceZ);
+		final Vector oldAcceleration = new Vector(movementManager.getLastDistanceX(), 0, movementManager.getLastDistanceZ());
 		final Vector newAcceleration = new Vector(x, 0, z);
 
 		final float angle = newAcceleration.angle(oldAcceleration);

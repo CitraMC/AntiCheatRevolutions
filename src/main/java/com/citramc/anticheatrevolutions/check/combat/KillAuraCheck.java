@@ -165,12 +165,12 @@ public final class KillAuraCheck {
 			return PASS;
 		}
 
-		if (user.isLagging() || (System.currentTimeMillis() - movementManager.lastTeleport) <= 100 || AntiCheatRevolutions
+		if (user.isLagging() || (System.currentTimeMillis() - movementManager.getLastTeleport()) <= 100 || AntiCheatRevolutions
 				.getPlugin().getTPS() < checksConfig.getDouble(CheckType.KILLAURA, "packetOrder", "minimumTps")) {
 			return PASS;
 		}
 
-		final long elapsed = System.currentTimeMillis() - movementManager.lastUpdate;
+		final long elapsed = System.currentTimeMillis() - movementManager.getLastUpdate();
 		if (elapsed < checksConfig.getInteger(CheckType.KILLAURA, "packetOrder", "minElapsedTime")) {
 			if (!PACKETORDER_FLAGS.containsKey(uuid)) {
 				PACKETORDER_FLAGS.put(uuid, 1);
@@ -202,9 +202,9 @@ public final class KillAuraCheck {
 		}
 
 		final int samples = checksConfig.getInteger(CheckType.KILLAURA, "variance", "samples");
-		if (movementManager.deltaPitch > 0.0f && movementManager.lastDeltaPitch > 0.0f
-				&& movementManager.deltaYaw > 5.0f) {
-			final float factor = movementManager.deltaPitch % movementManager.lastDeltaPitch;
+		if (movementManager.getDeltaPitch() > 0.0f && movementManager.getLastDeltaPitch() > 0.0f
+				&& movementManager.getDeltaYaw() > 5.0f) {
+			final float factor = movementManager.getDeltaPitch() % movementManager.getLastDeltaPitch();
 			final EvictingQueue<Float> queue = FACTOR_MAP.getOrDefault(uuid, EvictingQueue.create(samples));
 			queue.add(factor);
 			if (queue.size() >= samples) {
@@ -232,10 +232,10 @@ public final class KillAuraCheck {
 			return PASS;
 		}
 
-		final float deltaYaw = movementManager.deltaYaw;
-		final float lastDeltaYaw = movementManager.lastDeltaYaw;
-		final float deltaPitch = movementManager.deltaPitch;
-		final float lastDeltaPitch = movementManager.lastDeltaPitch;
+		final float deltaYaw = movementManager.getDeltaYaw();
+		final float lastDeltaYaw = movementManager.getLastDeltaYaw();
+		final float deltaPitch = movementManager.getDeltaPitch();
+		final float lastDeltaPitch = movementManager.getLastDeltaPitch();
 		if (deltaYaw > 0.0f && Math.abs(deltaYaw - lastDeltaYaw) < 1e-5 && deltaPitch > 10.0f) {
 			return new CheckResult(Result.FAILED, "RepeatedAim",
 					"repeated aim pattern (type=yaw, deltaPitch=" + Utilities.roundFloat(deltaPitch, 1) + ")");
@@ -265,7 +265,7 @@ public final class KillAuraCheck {
 		}
 
 		if ((user.isLagging() && checksConfig.getBoolean(CheckType.KILLAURA, "throughWalls", "disableForLagging"))
-				|| (System.currentTimeMillis() - movementManager.lastTeleport) <= 100 || AntiCheatRevolutions.getPlugin()
+				|| (System.currentTimeMillis() - movementManager.getLastTeleport()) <= 100 || AntiCheatRevolutions.getPlugin()
 						.getTPS() < checksConfig.getDouble(CheckType.KILLAURA, "throughWalls", "minimumTps")) {
 			return PASS;
 		}

@@ -88,29 +88,29 @@ public final class SpeedCheck {
 		final MovementManager movementManager = user.getMovementManager();
 		final VelocityTracker velocityTracker = user.getVelocityTracker();
 		
-		final double motion = movementManager.distanceXZ;
-		final boolean boxedIn = movementManager.topSolid && movementManager.bottomSolid;
+		final double motion = movementManager.getDistanceXZ();
+		final boolean boxedIn = movementManager.isTopSolid() && movementManager.isBottomSolid();
 		final boolean sprinting = true; // TODO do this using packets
 		
 		double buffer = PREDICT_BUFFER.getOrDefault(uuid, 0.0);
 		double movementSpeed = Utilities.getMovementSpeed(player);
-		if (movementManager.wasOnGround) {
+		if (movementManager.isWasOnGround()) {
 			if (sprinting) {
 				movementSpeed *= 1.3f;
 			}
-			
-			movementSpeed *= 0.16277136 / Math.pow((movementManager.friction *= 0.91f), 3);
-			if (!movementManager.onGround && (movementManager.motionY >= 0.42f || (boxedIn && movementManager.motionY > 0.0f)) && sprinting) {
+			movementManager.setFriction(movementManager.getFriction() * 0.91f);
+			movementSpeed *= 0.16277136 / Math.pow(movementManager.getFriction(), 3);
+			if (!movementManager.isOnGround() && (movementManager.getMotionY() >= 0.42f || (boxedIn && movementManager.getMotionY() > 0.0f)) && sprinting) {
 				movementSpeed += 0.2f;
 			}
 		} else {
 			movementSpeed = sprinting ? 0.026f : 0.02f;
-			movementManager.friction = 0.91f;
+			movementManager.setFriction(0.91f);
 		}
 		
 		movementSpeed += velocityTracker.getHorizontal();
 		
-		final double factor = (motion - movementManager.adjusted) / movementSpeed;
+		final double factor = (motion - movementManager.getAdjusted()) / movementSpeed;
 		final boolean exempted = Utilities.isCollisionPoint(movingTowards,
 				material -> material == XMaterial.HONEY_BLOCK.parseMaterial());
 		if (factor > 1.001 && !exempted) {
@@ -125,8 +125,8 @@ public final class SpeedCheck {
 		
 		PREDICT_BUFFER.put(uuid, buffer);
 		
-		movementManager.adjusted = motion * movementManager.friction;
-		movementManager.friction = Friction.getFactor(movingTowards.clone().subtract(0, 1, 0).getBlock());
+		movementManager.setAdjusted(motion * movementManager.getFriction());
+		movementManager.setFriction(Friction.getFactor(movingTowards.clone().subtract(0, 1, 0).getBlock()));
 		return PASS;
 	}
 	
@@ -142,30 +142,30 @@ public final class SpeedCheck {
 		final VelocityTracker velocityTracker = user.getVelocityTracker();
 
 		// Riptiding exemption
-		if (movementManager.riptideTicks > 0) {
+		if (movementManager.getRiptideTicks() > 0) {
 			return PASS;
 		}
 		
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
-		final double distanceXZ = movementManager.distanceXZ;
-		final boolean boxedIn = movementManager.topSolid && movementManager.bottomSolid;
+		final double distanceXZ = movementManager.getDistanceXZ();
+		final boolean boxedIn = movementManager.isTopSolid() && movementManager.isBottomSolid();
 
 		// AirSpeed
-		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "airSpeed") && movementManager.airTicks > 1
-				&& movementManager.elytraEffectTicks <= 0 && !Utilities.isNearClimbable(player)) {
+		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "airSpeed") && movementManager.getAirTicks() > 1
+				&& movementManager.getElytraEffectTicks() <= 0 && !Utilities.isNearClimbable(player)) {
 			double buffer = AIRSPEED_BUFFER.getOrDefault(uuid, 0.0);
 			
 			final double multiplier = 0.985D;
-			double predict = 0.36 * Math.pow(multiplier, movementManager.airTicks + 1);
+			double predict = 0.36 * Math.pow(multiplier, movementManager.getAirTicks() + 1);
 			// Prevents false when falling from great heights
-			if (movementManager.airTicks >= 115) {
+			if (movementManager.getAirTicks() >= 115) {
 				predict = Math.max(0.08, predict);
 			}
 
 			double limit = checksConfig.getDouble(CheckType.SPEED, "airSpeed", "baseLimit"); // Default 0.03125
 			// Adjust for ice
-			if (movementManager.iceInfluenceTicks > 0) {
-				double iceIncrement = 0.025 * Math.pow(1.038, movementManager.iceInfluenceTicks);
+			if (movementManager.getIceInfluenceTicks() > 0) {
+				double iceIncrement = 0.025 * Math.pow(1.038, movementManager.getIceInfluenceTicks());
 				// Clamp to max value
 				if (iceIncrement > 0.18D) {
 					iceIncrement = 0.18D;
@@ -185,13 +185,13 @@ public final class SpeedCheck {
 			}
 
 			// Leniency when boxed in
-			if (boxedIn && movementManager.airTicks < 3) {
+			if (boxedIn && movementManager.getAirTicks() < 3) {
 				predict *= 1.2D;
 			}
 
 			// Adjust for slime
-			if (movementManager.slimeInfluenceTicks > 0) {
-				double slimeIncrement = 0.022 * Math.pow(1.0375, movementManager.slimeInfluenceTicks);
+			if (movementManager.getSlimeInfluenceTicks() > 0) {
+				double slimeIncrement = 0.022 * Math.pow(1.0375, movementManager.getSlimeInfluenceTicks());
 				// Clamp to max value
 				if (slimeIncrement > 0.12D) {
 					slimeIncrement = 0.12D;
@@ -202,17 +202,17 @@ public final class SpeedCheck {
 
 			// Adjust for soul speed
 			final ItemStack boots = player.getInventory().getBoots();
-			if (boots != null && movementManager.soilInfluenceTicks > 0 && VersionLib.isSoulSpeed(boots)) {
+			if (boots != null && movementManager.getSoilInfluenceTicks() > 0 && VersionLib.isSoulSpeed(boots)) {
 				predict += boots.getEnchantmentLevel(Enchantment.SOUL_SPEED) * 0.05D;
 			}
 
 			// Adjust for speed effects
-			if (movementManager.hasSpeedEffect) {
+			if (movementManager.isHasSpeedEffect()) {
 				predict += VersionLib.getPotionLevel(player, PotionEffectType.SPEED) * 0.05D;
 			}
 
 			// Adjust for speed effects ending
-			if (movementManager.hadSpeedEffect && !movementManager.hasSpeedEffect) {
+			if (movementManager.isHadSpeedEffect() && !movementManager.isHasSpeedEffect()) {
 				limit *= 1.2D;
 			}
 
@@ -227,10 +227,10 @@ public final class SpeedCheck {
 			predict += walkSpeedMultiplier * (Math.pow(1.1, ((player.getWalkSpeed() / 0.20) - 1)) - 1);
 
 			// Slabs sometimes allow for a slight boost after jump
-			if (movementManager.halfMovementHistoryCounter > 0) {
+			if (movementManager.getHalfMovementHistoryCounter() > 0) {
 				predict *= 2.125D;
 			}
-			if (Utilities.couldBeOnHalfblock(movingTowards) && movementManager.halfMovementHistoryCounter == 0) {
+			if (Utilities.couldBeOnHalfblock(movingTowards) && movementManager.getHalfMovementHistoryCounter() == 0) {
 				predict *= 1.25D;
 			}
 
@@ -242,10 +242,10 @@ public final class SpeedCheck {
 			// Strafing in air when nearing terminal velocity gives false positives
 			// This fixes the issue but gives hackers some leniency which means we need
 			// another check for this
-			final double deltaMotionY = movementManager.motionY - movementManager.lastMotionY;
-			if ((deltaMotionY < 0 && deltaMotionY >= -0.08) || movementManager.airTicks >= 40
+			final double deltaMotionY = movementManager.getMotionY() - movementManager.getLastMotionY();
+			if ((deltaMotionY < 0 && deltaMotionY >= -0.08) || movementManager.getAirTicks() >= 40
 					&& (movingTowards.getBlockY() - player.getWorld().getHighestBlockYAt(movingTowards)) <= 1.5) {
-				predict *= (movementManager.airTicks > 60 ? 4.0D : (movementManager.airTicks > 30 ? 3.0D : 2.0D));
+				predict *= (movementManager.getAirTicks() > 60 ? 4.0D : (movementManager.getAirTicks() > 30 ? 3.0D : 2.0D));
 			}
 
 			// Players can move faster in air with slow falling
@@ -254,17 +254,17 @@ public final class SpeedCheck {
 			}
 
 			// Prevent NoSlow
-			if (movementManager.blockingTicks > 3 && movementManager.airTicks > 2) {
+			if (movementManager.getBlockingTicks() > 3 && movementManager.getAirTicks() > 2) {
 				predict *= 0.8D;
 			}
-			if (movementManager.blockingTicks > 10 && movementManager.airTicks > 2) {
+			if (movementManager.getBlockingTicks() > 10 && movementManager.getAirTicks() > 2) {
 				predict *= 0.5D;
 			}
 
 			// Fixes false positive when coming out of water
-			if (movementManager.nearLiquidTicks >= 7 && movementManager.airTicks >= 14
-					&& movementManager.motionY < -0.18 && movementManager.motionY > -0.182) {
-				predict += Math.abs(movementManager.motionY);
+			if (movementManager.getNearLiquidTicks() >= 7 && movementManager.getAirTicks() >= 14
+					&& movementManager.getMotionY() < -0.18 && movementManager.getMotionY() > -0.182) {
+				predict += Math.abs(movementManager.getMotionY());
 			}
 
 			// Adjust for velocity
@@ -276,8 +276,8 @@ public final class SpeedCheck {
 					AIRSPEED_BUFFER.put(uuid, buffer);
 					return new CheckResult(CheckResult.Result.FAILED, "AirSpeed",
 							"moved too fast in air (speed=" + Utilities.roundDouble(distanceXZ, 4) + ", limit="
-									+ Utilities.roundDouble(predict, 4) + ", block=" + movementManager.blockingTicks
-									+ ", box=" + boxedIn + ", at=" + movementManager.airTicks + ")");
+									+ Utilities.roundDouble(predict, 4) + ", block=" + movementManager.getBlockingTicks()
+									+ ", box=" + boxedIn + ", at=" + movementManager.getAirTicks() + ")");
 				}
 			} else {
 				buffer = Math.max(buffer - 0.05, 0.0);
@@ -287,10 +287,10 @@ public final class SpeedCheck {
 		}
 
 		// AirAcceleration
-		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "airAcceleration") && movementManager.airTicks > 1
-				&& movementManager.iceInfluenceTicks <= 0 && movementManager.slimeInfluenceTicks <= 0
-				&& movementManager.elytraEffectTicks <= 0) {
-			final double initialAcceleration = movementManager.acceleration;
+		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "airAcceleration") && movementManager.getAirTicks() > 1
+				&& movementManager.getIceInfluenceTicks() <= 0 && movementManager.getSlimeInfluenceTicks() <= 0
+				&& movementManager.getElytraEffectTicks() <= 0) {
+			final double initialAcceleration = movementManager.getAcceleration();
 			double buffer = AIRACCELERATION_BUFFER.getOrDefault(uuid, 0.0);
 			double limit = checksConfig.getDouble(CheckType.SPEED, "airAcceleration", "baseLimit"); // Default 0.3725
 			// Slight increase when boxed in
@@ -300,7 +300,7 @@ public final class SpeedCheck {
 
 			// Adjust for soul speed
 			final ItemStack boots = player.getInventory().getBoots();
-			if (boots != null && movementManager.soilInfluenceTicks > 0 && VersionLib.isSoulSpeed(boots)) {
+			if (boots != null && movementManager.getSoilInfluenceTicks() > 0 && VersionLib.isSoulSpeed(boots)) {
 				limit += boots.getEnchantmentLevel(Enchantment.SOUL_SPEED) * 0.025D;
 			}
 
@@ -310,7 +310,7 @@ public final class SpeedCheck {
 			}
 
 			// Adjust for slabs
-			if (movementManager.halfMovementHistoryCounter > 15) {
+			if (movementManager.getHalfMovementHistoryCounter() > 15) {
 				limit *= 2.05D;
 			}
 
@@ -344,34 +344,34 @@ public final class SpeedCheck {
 
 		// JumpBehaviour
 		// Works against YPorts and mini jumps
-		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "jumpBehaviour") && movementManager.touchedGroundThisTick
-				&& !boxedIn && movementManager.slimeInfluenceTicks <= 10 && !Utilities.isNearHalfblock(movingTowards)
+		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "jumpBehaviour") && movementManager.isTouchedGroundThisTick()
+				&& !boxedIn && movementManager.getSlimeInfluenceTicks() <= 10 && !Utilities.isNearHalfblock(movingTowards)
 				&& !Utilities.isNearHalfblock(movingTowards.clone().subtract(0, 0.51, 0))
-				&& !Utilities.couldBeOnBoat(player, 0.8, false) && movementManager.elytraEffectTicks <= 0) {
+				&& !Utilities.couldBeOnBoat(player, 0.8, false) && movementManager.getElytraEffectTicks() <= 0) {
 			// This happens naturally
-			if (movementManager.airTicksBeforeGrounded == movementManager.groundTicks) {
+			if (movementManager.getAirTicksBeforeGrounded() == movementManager.getGroundTicks()) {
 				final double minimumDistXZ = checksConfig.getDouble(CheckType.SPEED, "jumpBehaviour", "minimumDistXZ"); // Default
-				if (distanceXZ >= minimumDistXZ || movementManager.lastDistanceXZ >= minimumDistXZ) {
+				if (distanceXZ >= minimumDistXZ || movementManager.getLastDistanceXZ() >= minimumDistXZ) {
 					return new CheckResult(CheckResult.Result.FAILED, "JumpBehaviour",
 							"had unexpected jumping behaviour (dXZ=" + Utilities.roundDouble(distanceXZ, 4) + ", lXZ="
-									+ Utilities.roundDouble(movementManager.lastDistanceXZ, 4) + ")");
+									+ Utilities.roundDouble(movementManager.getLastDistanceXZ(), 4) + ")");
 				}
 			}
 		}
 
 		// GroundSpeed
-		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "groundSpeed") && movementManager.groundTicks > 1
-				&& movementManager.elytraEffectTicks < 10) {
+		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "groundSpeed") && movementManager.getGroundTicks() > 1
+				&& movementManager.getElytraEffectTicks() < 10) {
 			final double initialLimit = checksConfig.getDouble(CheckType.SPEED, "groundSpeed", "initialLimit"); // Default
 																												// 0.34
-			double limit = initialLimit - 0.0055 * Math.min(9, movementManager.groundTicks);
+			double limit = initialLimit - 0.0055 * Math.min(9, movementManager.getGroundTicks());
 			// Leniency when moving back on ground
-			if (movementManager.groundTicks < 5) {
+			if (movementManager.getGroundTicks() < 5) {
 				limit += 0.1D;
 			}
 
 			// Slab leniency
-			if (movementManager.halfMovementHistoryCounter > 8) {
+			if (movementManager.getHalfMovementHistoryCounter() > 8) {
 				limit += 0.2D;
 			}
 
@@ -386,24 +386,24 @@ public final class SpeedCheck {
 			}
 
 			// Adjust for speed effects
-			if (movementManager.hasSpeedEffect) {
+			if (movementManager.isHasSpeedEffect()) {
 				limit += VersionLib.getPotionLevel(player, PotionEffectType.SPEED) * 0.06D;
 			}
-			if (movementManager.hasSpeedEffect && movementManager.groundTicks > 3) {
+			if (movementManager.isHasSpeedEffect() && movementManager.getGroundTicks() > 3) {
 				limit *= 1.4D;
 			}
-			if (movementManager.hadSpeedEffect && !movementManager.hasSpeedEffect) {
+			if (movementManager.isHadSpeedEffect() && !movementManager.isHasSpeedEffect()) {
 				limit *= 1.2D;
 			}
 
 			// Ice adjustments
-			if (movementManager.iceInfluenceTicks >= 50) {
+			if (movementManager.getIceInfluenceTicks() >= 50) {
 				// When moving off ice
 				if (!Utilities.couldBeOnIce(movingTowards)) {
 					limit *= 2.5D;
 				} else {
 					// When boxed in and spamming space for boost
-					if (movementManager.topSolid && movementManager.bottomSolid) {
+					if (movementManager.isTopSolid() && movementManager.isBottomSolid()) {
 						limit *= 3.0D;
 					} else {
 						limit *= 1.25D;
@@ -426,7 +426,7 @@ public final class SpeedCheck {
 			limit += (player.getWalkSpeed() - 0.2) * 2.0D;
 
 			// Prevent NoSlow
-			if (player.isBlocking() && movementManager.groundTicks > 2) {
+			if (player.isBlocking() && movementManager.getGroundTicks() > 2) {
 				limit *= 0.45D;
 			}
 
@@ -436,7 +436,7 @@ public final class SpeedCheck {
 			}
 
 			// Sneak speed check
-			if (movementManager.sneakingTicks > 1) {
+			if (movementManager.getSneakingTicks() > 1) {
 				limit *= 0.68D;
 			}
 
@@ -447,7 +447,7 @@ public final class SpeedCheck {
 				return new CheckResult(CheckResult.Result.FAILED, "GroundSpeed",
 						"moved too fast on ground (speed=" + Utilities.roundDouble(distanceXZ, 4) + ", limit="
 								+ Utilities.roundDouble(limit, 4) + ", blocking=" + player.isBlocking() + ", gt="
-								+ movementManager.groundTicks + ")");
+								+ movementManager.getGroundTicks() + ")");
 			}
 		}
 
@@ -465,7 +465,7 @@ public final class SpeedCheck {
 		final MovementManager movementManager = user.getMovementManager();
 		final VelocityTracker velocityTracker = user.getVelocityTracker();
 		// Riptiding exemption
-		if (movementManager.riptideTicks > 0) {
+		if (movementManager.getRiptideTicks() > 0) {
 			return PASS;
 		}
 
@@ -478,9 +478,9 @@ public final class SpeedCheck {
 				Utilities.couldBeOnBoat(player),
 				Utilities.isClimbableBlock(distance.getFrom().getBlock())
 						|| Utilities.isClimbableBlock(distance.getFrom().getBlock().getRelative(BlockFace.DOWN)),
-				(movementManager.halfMovement || Utilities.isNearWall(distance.getFrom())), checksConfig);
+				(movementManager.isHalfMovement() || Utilities.isNearWall(distance.getFrom())), checksConfig);
 		// Fix false positive with soulsand boost
-		if (movementManager.nearLiquidTicks > 6) {
+		if (movementManager.getNearLiquidTicks() > 6) {
 			maxMotionY *= 1.0525D;
 		}
 
@@ -492,9 +492,9 @@ public final class SpeedCheck {
 		// Adjust for velocity
 		maxMotionY += velocityTracker.getVertical();
 
-		if (movementManager.motionY > maxMotionY && movementManager.slimeInfluenceTicks <= 0) {
+		if (movementManager.getMotionY() > maxMotionY && movementManager.getSlimeInfluenceTicks() <= 0) {
 			return new CheckResult(CheckResult.Result.FAILED, "VerticalSpeed",
-					"exceeded vertical speed limit (mY=" + Utilities.roundDouble(movementManager.motionY, 4) + ", max="
+					"exceeded vertical speed limit (mY=" + Utilities.roundDouble(movementManager.getMotionY(), 4) + ", max="
 							+ Utilities.roundDouble(maxMotionY, 4) + ")");
 		}
 		return PASS;
