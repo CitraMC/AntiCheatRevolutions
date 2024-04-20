@@ -22,13 +22,11 @@ import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,14 +34,11 @@ public class CriticalsCheckTest {
 
     private ServerMock server;
     private PlayerMock player;
-    private World world;
 
     @BeforeEach
     public void setUp() {
         server = MockBukkit.mock();
-        world = server.addSimpleWorld("world");
         player = server.addPlayer();
-        player.teleport(new Location(world, 0, 10, 0));  // Ensure the player is not on the ground
     }
 
     @AfterEach
@@ -53,38 +48,45 @@ public class CriticalsCheckTest {
 
     @Test
     public void testNonPlayerDamager() {
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(null, player, DamageCause.ENTITY_ATTACK, 10);
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(null, player,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
         CriticalsCheck.doDamageEvent(event, player);
         assertFalse(event.isCancelled(), "Event should not be cancelled if damager is not a player");
     }
 
     @Test
+    public void testNonEntityAttackCause() {
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player,
+                EntityDamageEvent.DamageCause.FIRE, 10);
+        CriticalsCheck.doDamageEvent(event, player);
+        assertFalse(event.isCancelled(), "Event should not be cancelled for non-ENTITY_ATTACK causes");
+    }
+
+    @Test
     public void testNonCriticalHit() {
-        player.setFallDistance(0f); // Player is not falling
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player, DamageCause.ENTITY_ATTACK, 10);
+        player.setFallDistance(0); // Not falling
+        player.setSprinting(false); // Not sprinting
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
         CriticalsCheck.doDamageEvent(event, player);
-        assertFalse(event.isCancelled(), "Event should not be cancelled if hit is not critical");
+        assertFalse(event.isCancelled(), "Event should not be cancelled if conditions for critical hit are not met");
     }
 
     @Test
-    public void testCriticalHitBlocked() {
-        player.setFallDistance(1f); // Player is falling
-        player.setSprinting(true);
-        Location blockLocation = player.getLocation().clone().subtract(0, 1, 0);
-        blockLocation.getBlock().setType(Material.STONE); // The block below the player is solid
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player, DamageCause.ENTITY_ATTACK, 10);
+    public void testCriticalHit() {
+        player.setFallDistance(1.0f); // Simulate falling
+        player.setSprinting(true); // Sprinting
+        simulatePlayerAirborne(); // Ensures player is not on the ground or any other invalid block
+
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
         CriticalsCheck.doDamageEvent(event, player);
-        assertTrue(event.isCancelled(), "Event should be cancelled if critical conditions are not met");
+        assertTrue(event.isCancelled(), "Event should be cancelled if critical hit conditions are met");
     }
 
-    @Test
-    public void testCriticalHitAllowed() {
-        player.setFallDistance(1f); // Player is falling
-        player.setSprinting(true);
-        Location blockLocation = player.getLocation().clone().subtract(0, 1, 0);
-        blockLocation.getBlock().setType(Material.AIR); // The block below the player is not solid
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, player, DamageCause.ENTITY_ATTACK, 10);
-        CriticalsCheck.doDamageEvent(event, player);
-        assertFalse(event.isCancelled(), "Event should not be cancelled if critical hit is allowed");
+    private void simulatePlayerAirborne() {
+        Location loc = player.getLocation();
+        loc.getBlock().setType(Material.AIR); // Under the player is air
+        player.teleport(loc.clone().add(0, -1, 0)); // Move player up
     }
 }

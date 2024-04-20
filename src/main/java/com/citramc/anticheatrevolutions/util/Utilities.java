@@ -849,6 +849,25 @@ public final class Utilities {
 		final org.bukkit.attribute.AttributeInstance attribute = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MOVEMENT_SPEED);
 		return attribute.getValue();
 	}
+
+    /**
+     * Returns the fractional part of the Y coordinate.
+     * @param location The location from which to extract the Y fraction.
+     * @return Fractional part of the Y coordinate.
+     */
+    public static double getYFraction(Location location) {
+        return location.getY() - Math.floor(location.getY());
+    }
+
+    /**
+     * Checks if the block at the given location is solid.
+     * @param location The location of the block to check.
+     * @return true if the block is solid, false otherwise.
+     */
+    public static boolean isSolidBlock(Location location) {
+        Block block = location.getBlock();
+        return block.getType().isSolid();
+    }
 	
 	static {
 		MinecraftVersion currentVersion = MinecraftVersion.getCurrentVersion();

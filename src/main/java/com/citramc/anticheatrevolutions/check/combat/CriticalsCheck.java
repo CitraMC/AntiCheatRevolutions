@@ -36,27 +36,34 @@ public final class CriticalsCheck {
 		if (!(event.getDamager() instanceof Player) || event.getCause() != DamageCause.ENTITY_ATTACK) {
 			return;
 		}
-		final Player player = (Player) event.getDamager();
-		if (isCritical(player)) {
-			double playerY = player.getLocation().getY();
-			boolean onFullBlock = playerY % 1.0 == 0;
-			boolean onHalfBlock = playerY % 0.5 == 0;
-			boolean isSolidBelow = player.getLocation().clone().subtract(0, 1.0, 0).getBlock().getType().isSolid();
 
-			if ((onFullBlock || onHalfBlock) && isSolidBelow) {
-				event.setCancelled(true);
-				EventListener.log(
-						new CheckResult(CheckResult.Result.FAILED, "tried to do a critical without needed conditions")
-								.getMessage(),
-						player, CheckType.CRITICALS, null);
-			}
+		if (isCriticalHit(damager)) {
+			event.setCancelled(true);
+			logCriticalAttempt(damager);
 		}
 	}
 
-	private static boolean isCritical(final Player player) {
-		return player.getFallDistance() > 0.0f && !player.isOnGround() && !player.isInsideVehicle()
-				&& !player.hasPotionEffect(PotionEffectType.BLINDNESS)
-				&& !Utilities.isHoveringOverWater(player.getLocation())
-				&& player.getEyeLocation().getBlock().getType() != Material.LADDER;
+	private static boolean isCriticalHit(Player player) {
+		if (player.getFallDistance() <= 0.0f || player.isOnGround() || player.isInsideVehicle()
+				|| player.hasPotionEffect(PotionEffectType.BLINDNESS)
+				|| Utilities.isHoveringOverWater(player.getLocation())
+				|| player.getEyeLocation().getBlock().getType() == Material.LADDER) {
+			return false;
+		}
+		return isInvalidCritical(player);
+	}
+
+	private static boolean isInvalidCritical(Player player) {
+		double yFraction = Utilities.getYFraction(player.getLocation());
+		if (yFraction != 0 && yFraction != 0.5) {
+			return false;
+		}
+		return Utilities.isSolidBlock(player.getLocation().clone().subtract(0, 1.0, 0));
+	}
+
+	private static void logCriticalAttempt(Player player) {
+		CheckResult result = new CheckResult(CheckResult.Result.FAILED,
+				"Tried to perform a critical hit without meeting necessary conditions");
+		EventListener.log(result.getMessage(), player, CheckType.CRITICALS, null);
 	}
 }
