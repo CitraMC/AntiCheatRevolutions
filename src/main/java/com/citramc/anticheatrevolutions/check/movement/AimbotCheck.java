@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,9 +33,9 @@ import com.citramc.anticheatrevolutions.util.Utilities;
 
 public final class AimbotCheck {
 
-	static final double EXPANDER = Math.pow(2, 24);
+	private static final double EXPANDER = Math.pow(2, 24);
 	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
-	
+
 	/**
 	 * This falses sometimes?
 	 * TODO we need to check yaw deltas
@@ -44,26 +45,47 @@ public final class AimbotCheck {
 		if (backend.isMovingExempt(player)) {
 			return PASS;
 		}
-		
-		final User user = AntiCheatRevolutions.getManager().getUserManager()
-				.getUser(player.getUniqueId());
+
+		final User user = AntiCheatRevolutions.getManager().getUserManager().getUser(player.getUniqueId());
 		final MovementManager movementManager = user.getMovementManager();
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
-		final float deltaPitch = movementManager.getDeltaPitch();
-		final float pitchAcceleration = Math.abs(deltaPitch - movementManager.getLastDeltaPitch());
 
-		final long gcd = Utilities.getGcd((long) (deltaPitch * EXPANDER),
-				(long) (movementManager.getLastDeltaPitch() * EXPANDER));
-		final double mod = Math.abs(player.getLocation().getPitch() % (gcd / EXPANDER));
-		final double minAcceleration = checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration");
-		final double maxMod = checksConfig.getDouble(CheckType.AIMBOT, "maxMod");
-		if ((gcd > 0L && gcd < 131072L) && mod <= maxMod && pitchAcceleration > minAcceleration && deltaPitch > 5.0f && deltaPitch < 20.0f) {
+		if (shouldFlagAimbot(movementManager, checksConfig, player)) {
+			double mod = calculateMod(player, movementManager);
+			double pitchAcceleration = calculatePitchAcceleration(movementManager);
+			long gcd = calculateGCD(movementManager);
+
 			return new CheckResult(CheckResult.Result.FAILED,
-					"failed computational check (gcd=" + gcd + ", mod="
-							+ Utilities.roundDouble(mod, 5) + ", accel=" + Utilities.roundDouble(pitchAcceleration, 3)
-							+ ", delta=" + Utilities.roundDouble(deltaPitch, 1) + ")");
+					String.format("failed computational check (gcd=%d, mod=%.5f, accel=%.3f, delta=%.1f)",
+							gcd, mod, pitchAcceleration, movementManager.getDeltaPitch()));
 		}
 		return PASS;
 	}
 
+	private static boolean shouldFlagAimbot(MovementManager movementManager, Checks checksConfig, Player player) {
+		final float deltaPitch = movementManager.getDeltaPitch();
+		final float pitchAcceleration = Math.abs(deltaPitch - movementManager.getLastDeltaPitch());
+		final double minAcceleration = checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration");
+		final double maxMod = checksConfig.getDouble(CheckType.AIMBOT, "maxMod");
+
+		long gcd = calculateGCD(movementManager);
+		double mod = calculateMod(player, movementManager);
+
+		return (gcd > 0L && gcd < 131072L) && mod <= maxMod && pitchAcceleration > minAcceleration && deltaPitch > 5.0f
+				&& deltaPitch < 20.0f;
+	}
+
+	private static long calculateGCD(MovementManager movementManager) {
+		return Utilities.getGcd((long) (movementManager.getDeltaPitch() * EXPANDER),
+				(long) (movementManager.getLastDeltaPitch() * EXPANDER));
+	}
+
+	private static double calculateMod(Player player, MovementManager movementManager) {
+		long gcd = calculateGCD(movementManager);
+		return Math.abs(player.getLocation().getPitch() % (gcd / EXPANDER));
+	}
+
+	private static double calculatePitchAcceleration(MovementManager movementManager) {
+		return Math.abs(movementManager.getDeltaPitch() - movementManager.getLastDeltaPitch());
+	}
 }
