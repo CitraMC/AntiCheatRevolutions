@@ -25,6 +25,8 @@ import org.bukkit.potion.PotionEffectType;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 
+import lombok.Getter;
+
 public final class MovementManager {
 
 	// Ticks in air
@@ -60,10 +62,12 @@ public final class MovementManager {
 	// Previous horizontal distance on z-axis of movement
 	public double lastDistanceZ;
 	// Delta pitch
+	@Getter
 	public float deltaPitch;
 	// Delta yaw
 	public float deltaYaw;
 	// Previous delta pitch
+	@Getter
 	public float lastDeltaPitch;
 	// Previous delta yaw
 	public float lastDeltaYaw;

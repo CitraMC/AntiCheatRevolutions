@@ -320,4 +320,8 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 		return Math.min(Math.max(this.tps, 0.0D), 20.0D);
 	}
 
+	public static void setManager(AntiCheatManager testManager) {
+		manager = testManager;
+	}
+
 }

@@ -32,7 +32,7 @@ import com.citramc.anticheatrevolutions.util.Utilities;
 
 public final class AimbotCheck {
 
-	private static final double EXPANDER = Math.pow(2, 24);
+	static final double EXPANDER = Math.pow(2, 24);
 	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
 	
 	/**
@@ -49,11 +49,11 @@ public final class AimbotCheck {
 				.getUser(player.getUniqueId());
 		final MovementManager movementManager = user.getMovementManager();
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
-		final float deltaPitch = movementManager.deltaPitch;
-		final float pitchAcceleration = Math.abs(deltaPitch - movementManager.lastDeltaPitch);
+		final float deltaPitch = movementManager.getDeltaPitch();
+		final float pitchAcceleration = Math.abs(deltaPitch - movementManager.getLastDeltaPitch());
 
 		final long gcd = Utilities.getGcd((long) (deltaPitch * EXPANDER),
-				(long) (movementManager.lastDeltaPitch * EXPANDER));
+				(long) (movementManager.getLastDeltaPitch() * EXPANDER));
 		final double mod = Math.abs(player.getLocation().getPitch() % (gcd / EXPANDER));
 		final double minAcceleration = checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration");
 		final double maxMod = checksConfig.getDouble(CheckType.AIMBOT, "maxMod");
