@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,8 +38,12 @@ public final class CriticalsCheck {
 		}
 		final Player player = (Player) event.getDamager();
 		if (isCritical(player)) {
-			if ((player.getLocation().getY() % 1.0 == 0 || player.getLocation().getY() % 0.5 == 0)
-					&& player.getLocation().clone().subtract(0, 1.0, 0).getBlock().getType().isSolid()) {
+			double playerY = player.getLocation().getY();
+			boolean onFullBlock = playerY % 1.0 == 0;
+			boolean onHalfBlock = playerY % 0.5 == 0;
+			boolean isSolidBelow = player.getLocation().clone().subtract(0, 1.0, 0).getBlock().getType().isSolid();
+
+			if ((onFullBlock || onHalfBlock) && isSolidBelow) {
 				event.setCancelled(true);
 				EventListener.log(
 						new CheckResult(CheckResult.Result.FAILED, "tried to do a critical without needed conditions")
@@ -48,12 +53,10 @@ public final class CriticalsCheck {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private static boolean isCritical(final Player player) {
 		return player.getFallDistance() > 0.0f && !player.isOnGround() && !player.isInsideVehicle()
 				&& !player.hasPotionEffect(PotionEffectType.BLINDNESS)
 				&& !Utilities.isHoveringOverWater(player.getLocation())
 				&& player.getEyeLocation().getBlock().getType() != Material.LADDER;
 	}
-
 }
