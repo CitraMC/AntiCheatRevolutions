@@ -23,11 +23,8 @@ import be.seeseemelk.mockbukkit.entity.PlayerMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
-import com.citramc.anticheatrevolutions.check.Backend;
 import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.check.CheckType;
 import com.citramc.anticheatrevolutions.config.Configuration;
@@ -38,39 +35,38 @@ import com.citramc.anticheatrevolutions.util.Distance;
 import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.User;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
 public class VelocityCheckTest {
 
     private ServerMock server;
     private PlayerMock player;
-    private AntiCheatManager manager;
-    private Backend backend;
-    private UserManager userManager;
-    private User user;
-    private MovementManager movementManager;
-    private Configuration configuration;
-    private Checks checksConfig;
+    private AntiCheatManager mockManager;
+    private Configuration mockConfiguration;
+    private Checks mockChecks;
+    private MovementManager mockMovementManager;
+    private UserManager mockUserManager;
+    private User mockUser;
 
     @BeforeEach
     public void setUp() {
         server = MockBukkit.mock();
         player = server.addPlayer();
-        manager = mock(AntiCheatManager.class);
-        backend = mock(Backend.class);
-        userManager = mock(UserManager.class);
-        user = mock(User.class);
-        movementManager = mock(MovementManager.class);
-        configuration = mock(Configuration.class);
-        checksConfig = mock(Checks.class);
-        
+        mockManager = mock(AntiCheatManager.class);
+        mockChecks = mock(Checks.class);
+        mockConfiguration = mock(Configuration.class);
+        mockUserManager = mock(UserManager.class);
+        mockUser = mock(User.class);
+        mockMovementManager = mock(MovementManager.class);
 
-        // Setup the AntiCheatRevolutions manager
-        AntiCheatRevolutions.setManager(manager);
-        when(manager.getBackend()).thenReturn(backend);
-        when(manager.getUserManager()).thenReturn(userManager);
-        when(userManager.getUser(player.getUniqueId())).thenReturn(user);
-        when(manager.getConfiguration()).thenReturn(configuration);
-        when(configuration.getChecks()).thenReturn(checksConfig);
-        when(user.getMovementManager()).thenReturn(movementManager);
+        when(mockManager.getConfiguration()).thenReturn(mockConfiguration);
+        when(mockConfiguration.getChecks()).thenReturn(mockChecks);
+        when(mockManager.getUserManager()).thenReturn(mockUserManager);
+        when(mockUserManager.getUser(player.getUniqueId())).thenReturn(mockUser);
+        when(mockUser.getMovementManager()).thenReturn(mockMovementManager);
+
+        AntiCheatRevolutions.setManager(mockManager);
     }
 
     @AfterEach
@@ -79,40 +75,40 @@ public class VelocityCheckTest {
     }
 
     @Test
-    public void testVelocityCheck_Pass() {
-        when(movementManager.getVelocityExpectedMotionY()).thenReturn(0.0);
-        when(movementManager.isOnGround()).thenReturn(true);
+    public void testVelocityCompliance() {
+        when(mockChecks.getInteger(CheckType.VELOCITY, "minimumPercentage")).thenReturn(80);
+        when(mockChecks.getInteger(CheckType.VELOCITY, "vlBeforeFlag")).thenReturn(3);
+        when(mockMovementManager.getVelocityExpectedMotionY()).thenReturn(5.0);
+        when(mockMovementManager.isOnGround()).thenReturn(false);
+        when(mockMovementManager.getMotionY()).thenReturn(5.0);
 
         CheckResult result = VelocityCheck.runCheck(player, new Distance());
-        assertEquals(CheckResult.Result.PASSED, result.getResult(), "Check should pass when no velocity is expected.");
+        assertEquals(CheckResult.Result.PASSED, result.getResult());
     }
 
     @Test
-    public void testVelocityCheck_FailIgnoredVelocity() {
-        when(movementManager.getVelocityExpectedMotionY()).thenReturn(2.0);
-        when(movementManager.getMotionY()).thenReturn(0.5);
-        when(movementManager.isOnGround()).thenReturn(false);
-        when(checksConfig.getInteger(CheckType.VELOCITY, "minimumPercentage")).thenReturn(50);
-        when(checksConfig.getInteger(CheckType.VELOCITY, "vlBeforeFlag")).thenReturn(1);
+    public void testVelocityNonCompliance() {
+        when(mockChecks.getInteger(CheckType.VELOCITY, "minimumPercentage")).thenReturn(80);
+        when(mockChecks.getInteger(CheckType.VELOCITY, "vlBeforeFlag")).thenReturn(3);
+        when(mockMovementManager.getVelocityExpectedMotionY()).thenReturn(10.0);
+        when(mockMovementManager.isOnGround()).thenReturn(false);
+        when(mockMovementManager.getMotionY()).thenReturn(5.0); // 50% of expected, below the threshold of 80%
 
         CheckResult result = VelocityCheck.runCheck(player, new Distance());
-        assertEquals(CheckResult.Result.FAILED, result.getResult(), "Check should fail if the player ignores server velocity.");
+        assertEquals(CheckResult.Result.PASSED, result.getResult()); // First time, only a pass, violation count
+                                                                     // increases
+        result = VelocityCheck.runCheck(player, new Distance()); // Second check
+        result = VelocityCheck.runCheck(player, new Distance()); // Third check
+        assertEquals(CheckResult.Result.FAILED, result.getResult()); // Should fail now
     }
 
     @Test
-    public void testVelocityCheck_ViolationReset() {
-        when(movementManager.getVelocityExpectedMotionY()).thenReturn(2.0);
-        when(movementManager.getMotionY()).thenReturn(2.0); // Complies with expected motion
-        when(movementManager.isOnGround()).thenReturn(false);
-        when(checksConfig.getInteger(CheckType.VELOCITY, "minimumPercentage")).thenReturn(50);
-        when(checksConfig.getInteger(CheckType.VELOCITY, "vlBeforeFlag")).thenReturn(2);
+    public void testPlayerOnGround() {
+        when(mockMovementManager.getVelocityExpectedMotionY()).thenReturn(5.0);
+        when(mockMovementManager.isOnGround()).thenReturn(true);
 
-        // Assume previous violations
-        VelocityCheck.VIOLATIONS.put(player.getUniqueId(), 1);
-
-        VelocityCheck.runCheck(player, new Distance()); // Should not add violation
-        int violations = VelocityCheck.VIOLATIONS.getOrDefault(player.getUniqueId(), 0);
-
-        assertEquals(0, violations, "Violations should reset on compliance.");
+        CheckResult result = VelocityCheck.runCheck(player, new Distance());
+        assertEquals(CheckResult.Result.PASSED, result.getResult(),
+                "Grounded players should not trigger velocity checks.");
     }
 }

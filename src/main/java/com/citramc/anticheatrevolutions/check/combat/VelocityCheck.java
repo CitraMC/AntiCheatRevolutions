@@ -19,7 +19,7 @@
  */
 package com.citramc.anticheatrevolutions.check.combat;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -30,53 +30,46 @@ import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.check.CheckType;
 import com.citramc.anticheatrevolutions.check.CheckResult.Result;
 import com.citramc.anticheatrevolutions.config.providers.Checks;
+import com.citramc.anticheatrevolutions.manage.AntiCheatManager;
 import com.citramc.anticheatrevolutions.util.Distance;
 import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 
-public final class VelocityCheck {
+public class VelocityCheck {
 
-	public static final Map<UUID, Integer> VIOLATIONS = new HashMap<>();
-	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
+	public final static Map<UUID, Integer> VIOLATIONS = new ConcurrentHashMap<>();
 
 	public static CheckResult runCheck(final Player player, final Distance distance) {
-		final User user = AntiCheatRevolutions.getManager().getUserManager().getUser(player.getUniqueId());
+		final AntiCheatManager manager = AntiCheatRevolutions.getManager();
+		final Checks checksConfig = manager.getConfiguration().getChecks();
+		final UUID playerId = player.getUniqueId();
+		final User user = manager.getUserManager().getUser(playerId);
 		final MovementManager movementManager = user.getMovementManager();
-		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
+
 		final int minimumPercentage = checksConfig.getInteger(CheckType.VELOCITY, "minimumPercentage");
 		final int vlBeforeFlag = checksConfig.getInteger(CheckType.VELOCITY, "vlBeforeFlag");
 
-		if (movementManager.getVelocityExpectedMotionY() > 0) {
-			if (!movementManager.isOnGround() || movementManager.getAirTicks() > 5) {
-				double percentage = calculatePercentage(movementManager);
-				movementManager.setVelocityExpectedMotionY(0); // Reset expected Y motion after calculation
+		double expectedY = movementManager.getVelocityExpectedMotionY();
+		if (expectedY > 0 && !movementManager.isOnGround()) {
+			double motionY = movementManager.getMotionY();
+			double percentage = motionY > 0 ? (motionY / expectedY) * 100 : 0;
+			movementManager.setVelocityExpectedMotionY(0); // Reset expected Y motion immediately to avoid re-use.
 
-				if (percentage < minimumPercentage) {
-					return handleViolation(player.getUniqueId(), percentage, vlBeforeFlag);
-				} else {
-					VIOLATIONS.remove(player.getUniqueId());
+			if (percentage < minimumPercentage) {
+				int vl = VIOLATIONS.getOrDefault(playerId, 0) + 1;
+				VIOLATIONS.put(playerId, vl);
+				if (vl >= vlBeforeFlag) {
+					return new CheckResult(Result.FAILED,
+							"Ignored server velocity (pct=" + Utilities.roundDouble(percentage, 2) + ")");
 				}
+			} else {
+				VIOLATIONS.remove(playerId);
 			}
+		} else if (movementManager.getAirTicks() > 5 && expectedY > 0) {
+			movementManager.setVelocityExpectedMotionY(0);
 		}
 
-		return PASS;
-	}
-
-	private static double calculatePercentage(MovementManager movementManager) {
-		double motionY = movementManager.getMotionY();
-		double expectedMotionY = movementManager.getVelocityExpectedMotionY();
-		double percentage = (motionY / expectedMotionY) * 100;
-		return Math.max(percentage, 0); // Ensure percentage is not negative
-	}
-
-	private static CheckResult handleViolation(UUID playerId, double percentage, int vlBeforeFlag) {
-		int vl = VIOLATIONS.getOrDefault(playerId, 0) + 1;
-		VIOLATIONS.put(playerId, vl);
-		if (vl >= vlBeforeFlag) {
-			return new CheckResult(Result.FAILED,
-					"ignored server velocity (pct=" + Utilities.roundDouble(percentage, 2) + ")");
-		}
-		return PASS;
+		return new CheckResult(CheckResult.Result.PASSED);
 	}
 }
