@@ -19,16 +19,15 @@ package com.citramc.anticheatrevolutions.check.movement;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
+import be.seeseemelk.mockbukkit.WorldMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
+import org.bukkit.Location;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.check.Backend;
@@ -42,76 +41,94 @@ import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 public class AimbotCheckTest {
 
     private ServerMock server;
     private PlayerMock player;
-    private AntiCheatManager manager;
-    private Backend backend;
-    private UserManager userManager;
-    private User user;
-    private MovementManager movementManager;
-    private Configuration configuration;
-    private Checks checksConfig;
-    private MockedStatic<Utilities> mockedUtilities;
+    private WorldMock world;
+    private AntiCheatManager mockManager;
+    private Backend mockBackend;
+    private UserManager mockUserManager;
+    private Configuration mockConfiguration;
+    private User mockUser;
+    private MovementManager mockMovementManager;
+    private Checks mockChecks;
 
     @BeforeEach
     public void setUp() {
         server = MockBukkit.mock();
+        world = server.addSimpleWorld("world"); // Ensure a world is added and named.
         player = server.addPlayer();
-        manager = mock(AntiCheatManager.class);
-        backend = mock(Backend.class);
-        userManager = mock(UserManager.class);
-        user = mock(User.class);
-        movementManager = mock(MovementManager.class);
-        configuration = mock(Configuration.class);
-        checksConfig = mock(Checks.class);
-        
 
-        // Setup the AntiCheatRevolutions manager
-        AntiCheatRevolutions.setManager(manager);
-        when(manager.getBackend()).thenReturn(backend);
-        when(manager.getUserManager()).thenReturn(userManager);
-        when(userManager.getUser(player.getUniqueId())).thenReturn(user);
-        when(manager.getConfiguration()).thenReturn(configuration);
-        when(configuration.getChecks()).thenReturn(checksConfig);
-        when(user.getMovementManager()).thenReturn(movementManager);
+        mockManager = mock(AntiCheatManager.class);
+        mockBackend = mock(Backend.class);
+        mockUserManager = mock(UserManager.class);
+        mockConfiguration = mock(Configuration.class);
+        mockUser = mock(User.class);
+        mockMovementManager = mock(MovementManager.class);
+        mockChecks = mock(Checks.class);
 
-        mockedUtilities = Mockito.mockStatic(Utilities.class);
+        AntiCheatRevolutions.setManager(mockManager);
+        when(mockManager.getBackend()).thenReturn(mockBackend);
+        when(mockManager.getUserManager()).thenReturn(mockUserManager);
+        when(mockManager.getConfiguration()).thenReturn(mockConfiguration);
+        when(mockUserManager.getUser(player.getUniqueId())).thenReturn(mockUser);
+        when(mockUser.getMovementManager()).thenReturn(mockMovementManager);
+        when(mockConfiguration.getChecks()).thenReturn(mockChecks);
     }
 
     @AfterEach
     public void tearDown() {
-        mockedUtilities.close();
         MockBukkit.unmock();
     }
 
     @Test
-    public void testAimbotCheck_Pass() {
-        when(backend.isMovingExempt(player)).thenReturn(false);
-        when(movementManager.getDeltaPitch()).thenReturn(10f);
-        when(movementManager.getLastDeltaPitch()).thenReturn(5f);
-        when(checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration")).thenReturn(2.0);
-        when(checksConfig.getDouble(CheckType.AIMBOT, "maxMod")).thenReturn(0.05);
+    public void testExemptPlayer() {
+        when(mockBackend.isMovingExempt(player)).thenReturn(true);
 
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, null, null, 0);
-        CheckResult result = AimbotCheck.runCheck(player, event);
-        assertEquals(CheckResult.Result.PASSED, result.getResult(), "Aimbot check should pass under normal conditions.");
+        CheckResult result = AimbotCheck.runCheck(player, new EntityDamageByEntityEvent(player, player, null, 0));
+        assertEquals(CheckResult.Result.PASSED, result.getResult(), "Exempt players should always pass the check.");
     }
 
     @Test
-    public void testAimbotCheck_Fail() {
-        long gcd = 1L; // Simulate a perfect GCD
-        mockedUtilities.when(() -> Utilities.getGcd(anyLong(), anyLong())).thenReturn(gcd);
-        
-        when(backend.isMovingExempt(player)).thenReturn(false);
-        when(movementManager.getDeltaPitch()).thenReturn(10f);
-        when(movementManager.getLastDeltaPitch()).thenReturn(5f);
-        when(checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration")).thenReturn(1.0);
-        when(checksConfig.getDouble(CheckType.AIMBOT, "maxMod")).thenReturn(0.01);
+    public void testFailedAimbotCheck() {
+        // Setup non-exempt conditions
+        when(mockBackend.isMovingExempt(player)).thenReturn(false);
+        when(mockChecks.getDouble(CheckType.AIMBOT, "minAcceleration")).thenReturn(0.2);
+        when(mockChecks.getDouble(CheckType.AIMBOT, "maxMod")).thenReturn(0.5);
 
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, null, null, 0);
-        CheckResult result = AimbotCheck.runCheck(player, event);
-        assertEquals(CheckResult.Result.FAILED, result.getResult(), "Aimbot check should fail when suspicious conditions are met.");
+        // Mocking player movement for failing conditions
+        player.teleport(new Location(world, 0, 64, 0, 0.0f, 30.0f)); // Set the player's location in the test world.
+        when(mockMovementManager.getDeltaPitch()).thenReturn(16.0f);
+        when(mockMovementManager.getLastDeltaPitch()).thenReturn(10.0f);
+
+        // Mocking the static method within the test method
+        MockedStatic<Utilities> mocked = Mockito.mockStatic(Utilities.class);
+        long mockedGcd = 100;
+        mocked.when(() -> Utilities.getGcd(anyLong(), anyLong())).thenReturn(mockedGcd);
+
+        CheckResult result = AimbotCheck.runCheck(player, new EntityDamageByEntityEvent(player, player, null, 0));
+        assertEquals(CheckResult.Result.FAILED, result.getResult(),
+                "Players with suspicious pitch movements should fail the aimbot check.");
+    }
+
+    @Test
+    public void testPassedAimbotCheck() {
+        // Setup non-exempt conditions
+        when(mockBackend.isMovingExempt(player)).thenReturn(false);
+        when(mockChecks.getDouble(CheckType.AIMBOT, "minAcceleration")).thenReturn(0.2);
+        when(mockChecks.getDouble(CheckType.AIMBOT, "maxMod")).thenReturn(0.5);
+
+        // Mocking player movement for passing conditions
+        player.teleport(new Location(world, 0, 64, 0, 0.0f, 10.0f)); // Set the player's location in the test world.
+        when(mockMovementManager.getDeltaPitch()).thenReturn(10.0f);
+        when(mockMovementManager.getLastDeltaPitch()).thenReturn(9.0f);
+
+        CheckResult result = AimbotCheck.runCheck(player, new EntityDamageByEntityEvent(player, player, null, 0));
+        assertEquals(CheckResult.Result.PASSED, result.getResult(),
+                "Players with normal pitch movements should pass the aimbot check.");
     }
 }

@@ -26,66 +26,56 @@ import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.check.Backend;
 import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.check.CheckType;
+import com.citramc.anticheatrevolutions.config.Configuration;
 import com.citramc.anticheatrevolutions.config.providers.Checks;
+import com.citramc.anticheatrevolutions.manage.AntiCheatManager;
+import com.citramc.anticheatrevolutions.manage.UserManager;
 import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 
-public final class AimbotCheck {
+public class AimbotCheck {
 
-	private static final double EXPANDER = Math.pow(2, 24);
-	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
+	private static final double EXPANDER = 1000000.0;
 
-	/**
-	 * This falses sometimes?
-	 * TODO we need to check yaw deltas
-	 */
 	public static CheckResult runCheck(final Player player, final EntityDamageByEntityEvent event) {
-		final Backend backend = AntiCheatRevolutions.getManager().getBackend();
+		final AntiCheatManager manager = AntiCheatRevolutions.getManager();
+		final Backend backend = manager.getBackend();
+		final UserManager userManager = manager.getUserManager();
+		final Configuration configuration = manager.getConfiguration();
+
 		if (backend.isMovingExempt(player)) {
-			return PASS;
+			return new CheckResult(CheckResult.Result.PASSED);
 		}
 
-		final User user = AntiCheatRevolutions.getManager().getUserManager().getUser(player.getUniqueId());
+		final User user = userManager.getUser(player.getUniqueId());
 		final MovementManager movementManager = user.getMovementManager();
-		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
+		final Checks checksConfig = configuration.getChecks();
 
-		if (shouldFlagAimbot(movementManager, checksConfig, player)) {
-			double mod = calculateMod(player, movementManager);
-			double pitchAcceleration = calculatePitchAcceleration(movementManager);
-			long gcd = calculateGCD(movementManager);
-
-			return new CheckResult(CheckResult.Result.FAILED,
-					String.format("failed computational check (gcd=%d, mod=%.5f, accel=%.3f, delta=%.1f)",
-							gcd, mod, pitchAcceleration, movementManager.getDeltaPitch()));
-		}
-		return PASS;
-	}
-
-	private static boolean shouldFlagAimbot(MovementManager movementManager, Checks checksConfig, Player player) {
 		final float deltaPitch = movementManager.getDeltaPitch();
-		final float pitchAcceleration = Math.abs(deltaPitch - movementManager.getLastDeltaPitch());
+		final float lastDeltaPitch = movementManager.getLastDeltaPitch();
+		final float pitchAcceleration = Math.abs(deltaPitch - lastDeltaPitch);
+
+		final long gcd = Utilities.getGcd((long) (deltaPitch * EXPANDER),
+				(long) (lastDeltaPitch * EXPANDER));
+		final double mod = Math.abs(player.getLocation().getPitch() % (gcd / EXPANDER));
+
 		final double minAcceleration = checksConfig.getDouble(CheckType.AIMBOT, "minAcceleration");
 		final double maxMod = checksConfig.getDouble(CheckType.AIMBOT, "maxMod");
 
-		long gcd = calculateGCD(movementManager);
-		double mod = calculateMod(player, movementManager);
-
-		return (gcd > 0L && gcd < 131072L) && mod <= maxMod && pitchAcceleration > minAcceleration && deltaPitch > 5.0f
-				&& deltaPitch < 20.0f;
+		if (gcdValid(gcd) && mod <= maxMod && pitchAcceleration > minAcceleration && pitchValid(deltaPitch)) {
+			return new CheckResult(CheckResult.Result.FAILED,
+					String.format("failed computational check (gcd=%d, mod=%.5f, accel=%.3f, delta=%.1f)",
+							gcd, mod, pitchAcceleration, deltaPitch));
+		}
+		return new CheckResult(CheckResult.Result.PASSED);
 	}
 
-	private static long calculateGCD(MovementManager movementManager) {
-		return Utilities.getGcd((long) (movementManager.getDeltaPitch() * EXPANDER),
-				(long) (movementManager.getLastDeltaPitch() * EXPANDER));
+	private static boolean gcdValid(long gcd) {
+		return gcd > 0L && gcd < 131072L;
 	}
 
-	private static double calculateMod(Player player, MovementManager movementManager) {
-		long gcd = calculateGCD(movementManager);
-		return Math.abs(player.getLocation().getPitch() % (gcd / EXPANDER));
-	}
-
-	private static double calculatePitchAcceleration(MovementManager movementManager) {
-		return Math.abs(movementManager.getDeltaPitch() - movementManager.getLastDeltaPitch());
+	private static boolean pitchValid(float deltaPitch) {
+		return deltaPitch > 5.0f && deltaPitch < 20.0f;
 	}
 }
