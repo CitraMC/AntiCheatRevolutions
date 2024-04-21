@@ -29,7 +29,7 @@ import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 
 public class UpdateManager {
 
-	public static final int RESOURCE_ID = 23799;
+	public static final int RESOURCE_ID = 116270;
 	public static final String SPIGOT_VERSION_URL = "https://api.spigotmc.org/legacy/update.php?resource="
 			+ RESOURCE_ID;
 
@@ -106,6 +106,8 @@ public class UpdateManager {
 		public VersionSplit(String version) throws Exception {
 			if (version.endsWith("-ALPHA")) {
 				version = version.substring(0, version.length() - 6);
+			} else if (version.endsWith("-SNAPSHOT")) {
+				version = version.substring(0, version.length() - 9);
 			} else if (version.endsWith("-PRE")) {
 				this.prerelease = true;
 				version = version.substring(0, version.length() - 4);
