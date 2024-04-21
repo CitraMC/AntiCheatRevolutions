@@ -18,7 +18,7 @@
  */
 package com.citramc.anticheatrevolutions.check.movement;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,41 +31,43 @@ import com.cryptomorin.xseries.XMaterial;
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.check.CheckType;
-import com.citramc.anticheatrevolutions.check.CheckResult.Result;
+import com.citramc.anticheatrevolutions.config.Configuration;
 import com.citramc.anticheatrevolutions.config.providers.Checks;
+import com.citramc.anticheatrevolutions.manage.AntiCheatManager;
 import com.citramc.anticheatrevolutions.util.MovementManager;
 import com.citramc.anticheatrevolutions.util.Utilities;
 import com.citramc.anticheatrevolutions.util.VersionLib;
 
-public final class BoatFlyCheck {
+public class BoatFlyCheck {
 
-	public static final Map<UUID, Integer> VIOLATIONS = new HashMap<UUID, Integer>();
-	private static final CheckResult PASS = new CheckResult(CheckResult.Result.PASSED);
+	private static final Map<UUID, Integer> VIOLATIONS = new ConcurrentHashMap<>();
 
 	public static CheckResult runCheck(final Player player, final MovementManager movementManager, final Location to) {
-		if (movementManager.getMotionY() <= 1E-3
-				|| (System.currentTimeMillis() - movementManager.getLastTeleport() <= 150) || VersionLib.isFlying(player)
-				|| !player.isInsideVehicle()) {
-			return PASS;
+		final AntiCheatManager manager = AntiCheatRevolutions.getManager();
+		final Configuration configuration = manager.getConfiguration();
+		final Checks checksConfig = configuration.getChecks();
+
+		if (!player.isInsideVehicle() || player.getVehicle().getType() != EntityType.BOAT
+				|| movementManager.getMotionY() <= 1E-3
+				|| (System.currentTimeMillis() - movementManager.getLastTeleport() <= 150)
+				|| VersionLib.isFlying(player)) {
+			return new CheckResult(CheckResult.Result.PASSED);
 		}
 
-		final UUID uuid = player.getUniqueId();
-		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
-		if (player.getVehicle().getType() == EntityType.BOAT) {
-			final Block bottom = player.getWorld().getBlockAt(to.getBlockX(), to.getBlockY() - 1, to.getBlockZ());
-			if (!Utilities.cantStandAt(bottom) || bottom.getType() == XMaterial.WATER.parseMaterial()) {
-				return PASS;
-			}
-			
-			int violations = VIOLATIONS.getOrDefault(uuid, 1);
-			if (violations++ >= checksConfig.getInteger(CheckType.BOATFLY, "vlBeforeFlag")) {
-				violations = 0;
-				return new CheckResult(Result.FAILED, "tried to fly in a boat (mY=" + movementManager.getMotionY()
-						+ ", bottom=" + bottom.getType().name().toLowerCase() + ")");
-			}
-			VIOLATIONS.put(uuid, violations);
+		Block bottom = player.getWorld().getBlockAt(to.getBlockX(), to.getBlockY() - 1, to.getBlockZ());
+		if (!Utilities.cantStandAt(bottom) || bottom.getType() == XMaterial.WATER.parseMaterial()) {
+			return new CheckResult(CheckResult.Result.PASSED);
 		}
-		return PASS;
+
+		UUID uuid = player.getUniqueId();
+		int violationsCount = VIOLATIONS.getOrDefault(uuid, 0) + 1;
+		VIOLATIONS.put(uuid, violationsCount);
+		if (violationsCount >= checksConfig.getInteger(CheckType.BOATFLY, "vlBeforeFlag")) {
+			VIOLATIONS.put(uuid, 0); // Reset violations after flagging
+			return new CheckResult(CheckResult.Result.FAILED,
+					"tried to fly in a boat (mY=" + movementManager.getMotionY()
+							+ ", bottom=" + bottom.getType().name().toLowerCase() + ")");
+		}
+		return new CheckResult(CheckResult.Result.PASSED);
 	}
-
 }
