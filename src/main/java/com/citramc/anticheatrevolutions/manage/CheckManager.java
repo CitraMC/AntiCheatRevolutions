@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,7 +75,7 @@ public final class CheckManager {
      */
     public void activateCheck(final CheckType type, final String className) {
         if (!isActive(type)) {
-            manager.getLoggingManager().logFineInfo("The " + type.toString() + " check was activated by " + className + ".");
+            manager.getLoggingManager().log("The " + type.toString() + " check was activated by " + className + ".");
             checkIgnoreList.remove(type);
         }
     }
@@ -86,7 +87,7 @@ public final class CheckManager {
      */
     public void deactivateCheck(final CheckType type, final String className) {
         if (isActive(type)) {
-            manager.getLoggingManager().logFineInfo("The " + type.toString() + " check was deactivated by " + className + ".");
+            manager.getLoggingManager().log("The " + type.toString() + " check was deactivated by " + className + ".");
             checkIgnoreList.add(type);
         }
     }
@@ -112,7 +113,7 @@ public final class CheckManager {
             if (!exemptList.containsKey(player.getUniqueId())) {
                 exemptList.put(player.getUniqueId(), new ArrayList<CheckType>());
             }
-            manager.getLoggingManager().logFineInfo(player.getName() + " was exempted from the " + type.toString() + " check by " + className + ".");
+            manager.getLoggingManager().log(player.getName() + " was exempted from the " + type.toString() + " check by " + className + ".");
             exemptList.get(player.getUniqueId()).add(type);
         }
     }
@@ -125,7 +126,7 @@ public final class CheckManager {
      */
     public void unexemptPlayer(final Player player, final CheckType type, final String className) {
         if (isExempt(player, type)) {
-            manager.getLoggingManager().logFineInfo(player.getName() + " was unexempted from the " + type.toString() + " check by " + className + ".");
+            manager.getLoggingManager().log(player.getName() + " was unexempted from the " + type.toString() + " check by " + className + ".");
             exemptList.get(player.getUniqueId()).remove(type);
         }
     }

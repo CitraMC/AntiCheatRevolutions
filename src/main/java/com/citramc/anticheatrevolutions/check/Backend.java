@@ -344,11 +344,11 @@ public class Backend {
 					final int timeMin = checksConfig.getInteger(CheckType.CHAT_SPAM, "timeMin");
 					if (manager.getConfiguration().getConfig().blockChatSpamRepetition.getValue()
 							&& message.equalsIgnoreCase(msg) && i == 1) {
-						manager.getLoggingManager().logFineInfo(player.getName() + " spam-repeated \"" + msg + "\"");
+						manager.getLoggingManager().log(player.getName() + " spam-repeated \"" + msg + "\"");
 						return new CheckResult(CheckResult.Result.FAILED, lang.SPAM_WARNING());
 					} else if (manager.getConfiguration().getConfig().blockChatSpamSpeed.getValue()
 							&& System.currentTimeMillis() - user.getLastCommandTime() < timeMin) {
-						manager.getLoggingManager().logFineInfo(player.getName() + " spammed quickly \"" + msg + "\"");
+						manager.getLoggingManager().log(player.getName() + " spammed quickly \"" + msg + "\"");
 						return new CheckResult(CheckResult.Result.FAILED, lang.SPAM_WARNING());
 					}
 				}

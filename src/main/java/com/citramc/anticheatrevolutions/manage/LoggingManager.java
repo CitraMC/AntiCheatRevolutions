@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +22,6 @@ package com.citramc.anticheatrevolutions.manage;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.config.Configuration;
@@ -29,35 +29,38 @@ import com.citramc.anticheatrevolutions.util.FileFormatter;
 import com.citramc.anticheatrevolutions.util.Permission;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LoggingManager {
 
     private final Logger fileLogger;
-    private static Handler fileHandler;
-    private static List<String> logs = new CopyOnWriteArrayList<String>();
+    private FileHandler fileHandler;
+    private final List<String> logs = new ArrayList<>();
     private final Configuration config;
 
     public LoggingManager(AntiCheatRevolutions plugin, Logger logger, Configuration config) {
         this.fileLogger = Logger.getLogger("com.citramc.anticheatrevolutions.AntiCheatRevolutions");
         this.config = config;
+        initializeLogger(plugin, logger);
+    }
+
+    private void initializeLogger(AntiCheatRevolutions plugin, Logger logger) {
         try {
-            File file = new File(plugin.getDataFolder(), "log");
-            if (!file.exists()) {
-                file.mkdir();
+            File logDir = new File(plugin.getDataFolder(), "log");
+            if (!logDir.exists()) {
+                logDir.mkdirs();
             }
-            fileHandler = new FileHandler(plugin.getDataFolder() + "/log/anticheat.log", true);
+            fileHandler = new FileHandler(new File(logDir, "anticheat.log").getPath(), true);
             fileHandler.setFormatter(new FileFormatter());
+            fileLogger.addHandler(fileHandler);
+            fileLogger.setUseParentHandlers(false);
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, "Failed to initialize logging file handler", ex);
         }
-        fileLogger.setUseParentHandlers(false);
-        fileLogger.addHandler(fileHandler);
     }
 
     public void log(String message) {
@@ -67,53 +70,50 @@ public class LoggingManager {
         if (config.getConfig().logToFile.getValue()) {
             logToFile(message);
         }
-        logToLogs(message);
+        synchronized (logs) {
+            logs.add(ChatColor.stripColor(message));
+        }
     }
 
     public void debugLog(String message) {
-        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "ACR " + ChatColor.GRAY + message);
-        logToLogs(message);
+        if (config.getConfig().debugMode.getValue()) {
+            Bukkit.getConsoleSender()
+                    .sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "ACR " + ChatColor.GRAY + message);
+            synchronized (logs) {
+                logs.add(ChatColor.stripColor(message));
+            }
+        }
     }
 
     public void logToConsole(String message) {
-    	Bukkit.getConsoleSender().sendMessage(message);
+        Bukkit.getConsoleSender().sendMessage(message);
     }
 
     public void logToFile(String message) {
         fileLogger.info(ChatColor.stripColor(message));
     }
 
-    public void logFineInfo(String message) {
-        logToFile(message);
-        logToLogs(message);
-    }
-
     public void logToPlayers(String message) {
-    	if(config.getConfig().disableBroadcast.getValue()) return;
-        for(Player player : Bukkit.getOnlinePlayers()) {
+        if (config.getConfig().disableBroadcast.getValue())
+            return;
+        Bukkit.getOnlinePlayers().forEach(player -> {
             if (Permission.SYSTEM_NOTICE.get(player)) {
                 player.sendMessage(message);
             }
-        }
-    }
-
-    private void logToLogs(String message) {
-        logs.add(ChatColor.stripColor(message));
+        });
     }
 
     public List<String> getLastLogs() {
-        List<String> log = new CopyOnWriteArrayList<String>();
-        if (logs.size() < 30) {
-            return logs;
+        synchronized (logs) {
+            List<String> recentLogs = new ArrayList<>(logs);
+            logs.clear();
+            return recentLogs;
         }
-        for (int i = logs.size() - 1; i >= 0; i--) {
-            log.add(logs.get(i));
-        }
-        logs.clear();
-        return log;
     }
 
     public void closeHandler() {
-        fileHandler.close();
+        if (fileHandler != null) {
+            fileHandler.close();
+        }
     }
 }
