@@ -20,10 +20,10 @@
 
 package com.citramc.anticheatrevolutions.manage;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -37,16 +37,17 @@ import com.citramc.anticheatrevolutions.config.Configuration;
 import com.citramc.anticheatrevolutions.util.VersionLib;
 
 /**
- * The manager that AntiCheatRevolutions will check with to see if it should watch
+ * The manager that AntiCheatRevolutions will check with to see if it should
+ * watch
  * certain checks and certain players.
  */
 public final class CheckManager {
-	
+
     private final AntiCheatManager manager;
     private final Configuration config;
-    
-    private static final List<CheckType> checkIgnoreList = new ArrayList<CheckType>();
-    private static final Map<UUID, List<CheckType>> exemptList = new HashMap<UUID, List<CheckType>>();
+
+    private static final Set<CheckType> checkIgnoreList = new HashSet<>();
+    private static final Map<UUID, Set<CheckType>> exemptList = new HashMap<>();
 
     public CheckManager(final AntiCheatManager manager) {
         this.manager = manager;
@@ -55,19 +56,20 @@ public final class CheckManager {
     }
 
     public void loadCheckIgnoreList(final Configuration configuration) {
-    	checkIgnoreList.clear();
+        checkIgnoreList.clear();
         for (final CheckType type : CheckType.values()) {
-            if (!configuration.getChecks().isEnabled(type)) {
+            if (!config.getChecks().isEnabled(type)) {
                 checkIgnoreList.add(type);
             }
         }
-        
+
         if (!checkIgnoreList.isEmpty()) {
-        	Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "ACR " + ChatColor.DARK_GRAY + "> " + ChatColor.GRAY
-					+ checkIgnoreList.size() + " check(s) have been disabled");
+            manager.getLoggingManager()
+                    .log(ChatColor.GOLD + "" + ChatColor.BOLD + "ACR " + ChatColor.DARK_GRAY + "> " + ChatColor.GRAY
+                            + checkIgnoreList.size() + " check(s) have been disabled");
         }
     }
-    
+
     /**
      * Turn a check on
      *
@@ -75,8 +77,8 @@ public final class CheckManager {
      */
     public void activateCheck(final CheckType type, final String className) {
         if (!isActive(type)) {
-            manager.getLoggingManager().log("The " + type.toString() + " check was activated by " + className + ".");
             checkIgnoreList.remove(type);
+            manager.getLoggingManager().log("Activated check: " + type);
         }
     }
 
@@ -87,8 +89,8 @@ public final class CheckManager {
      */
     public void deactivateCheck(final CheckType type, final String className) {
         if (isActive(type)) {
-            manager.getLoggingManager().log("The " + type.toString() + " check was deactivated by " + className + ".");
             checkIgnoreList.add(type);
+            manager.getLoggingManager().log("Deactivated check: " + type);
         }
     }
 
@@ -109,13 +111,8 @@ public final class CheckManager {
      * @param type   The check
      */
     public void exemptPlayer(final Player player, final CheckType type, final String className) {
-        if (!isExempt(player, type)) {
-            if (!exemptList.containsKey(player.getUniqueId())) {
-                exemptList.put(player.getUniqueId(), new ArrayList<CheckType>());
-            }
-            manager.getLoggingManager().log(player.getName() + " was exempted from the " + type.toString() + " check by " + className + ".");
-            exemptList.get(player.getUniqueId()).add(type);
-        }
+        exemptList.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>()).add(type);
+        manager.getLoggingManager().log(player.getName() + " was exempted from the " + type + " check.");
     }
 
     /**
@@ -125,9 +122,9 @@ public final class CheckManager {
      * @param type   The check
      */
     public void unexemptPlayer(final Player player, final CheckType type, final String className) {
-        if (isExempt(player, type)) {
-            manager.getLoggingManager().log(player.getName() + " was unexempted from the " + type.toString() + " check by " + className + ".");
-            exemptList.get(player.getUniqueId()).remove(type);
+        Set<CheckType> types = exemptList.getOrDefault(player.getUniqueId(), new HashSet<>());
+        if (types.remove(type)) {
+            manager.getLoggingManager().log(player.getName() + " was unexempted from the " + type + " check.");
         }
     }
 
@@ -138,12 +135,11 @@ public final class CheckManager {
      * @param type   The check
      */
     public boolean isExempt(final Player player, final CheckType type) {
-    	if (AntiCheatRevolutions.isFloodgateEnabled()) {
-    		if (FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
-    			return true;
-    		}
-    	}
-        return exemptList.containsKey(player.getUniqueId()) ? exemptList.get(player.getUniqueId()).contains(type) : false;
+        if (AntiCheatRevolutions.isFloodgateEnabled()
+                && FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
+            return true;
+        }
+        return exemptList.getOrDefault(player.getUniqueId(), new HashSet<>()).contains(type);
     }
 
     /**
@@ -166,17 +162,17 @@ public final class CheckManager {
     }
 
     /**
-     * Run a quick version of the "willCheck" method, using the other non-check-specific methods beforehand
+     * Run a quick version of the "willCheck" method, using the other
+     * non-check-specific methods beforehand
      *
      * @param player The player to check
      * @param type   The check being run
      * @return true if the check should run
      */
     public boolean willCheckQuick(final Player player, final CheckType type) {
-        return
-                isActive(type)
-                        && !isExempt(player, type)
-                        && !type.checkPermission(player);
+        return isActive(type)
+                && !isExempt(player, type)
+                && !type.checkPermission(player);
     }
 
     /**
@@ -187,15 +183,12 @@ public final class CheckManager {
      * @return true if the check should run
      */
     public boolean willCheck(final Player player, final CheckType type) {
-    	final boolean check = isActive(type)
-                && checkInWorld(player)
-                && !isExempt(player, type)
-                && !type.checkPermission(player)
-                && !isOpExempt(player);
-        if ((type == CheckType.FLIGHT || type == CheckType.SPEED) && VersionLib.isFlying(player)) {
-        	return false;
-        }
-        return check;
+        return isActive(type) &&
+                checkInWorld(player) &&
+                !isExempt(player, type) &&
+                !type.checkPermission(player) &&
+                !(config.getConfig().exemptOp.getValue() && player.isOp()) &&
+                !VersionLib.isFlying(player);
     }
 
     /**
