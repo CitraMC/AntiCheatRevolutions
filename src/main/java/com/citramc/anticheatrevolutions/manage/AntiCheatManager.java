@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +20,6 @@
 package com.citramc.anticheatrevolutions.manage;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -33,15 +33,15 @@ import com.citramc.anticheatrevolutions.config.Configuration;
  * The internal hub for all managers.
  */
 public final class AntiCheatManager {
-	
+
     private static AntiCheatRevolutions plugin;
     private static Configuration configuration;
     private static UserManager userManager;
     private static CheckManager checkManager;
     private static LoggingManager loggingManager;
     private static Backend backend;
-    private static Map<String, RegisteredListener[]> eventchains = new ConcurrentHashMap<String, RegisteredListener[]>();
-    private static Map<String, Long> eventcache = new ConcurrentHashMap<String, Long>();
+    private static Map<String, RegisteredListener[]> eventchains = new ConcurrentHashMap<>();
+    private static Map<String, Long> eventcache = new ConcurrentHashMap<>();
 
     public AntiCheatManager(final AntiCheatRevolutions instance, final Logger logger) {
         plugin = instance;
@@ -64,44 +64,42 @@ public final class AntiCheatManager {
         loggingManager.logToPlayers(message);
     }
 
-    public void addEvent(String e, RegisteredListener[] arr) {
+    public void addEvent(String eventName, RegisteredListener[] listeners) {
         if (!configuration.getConfig().eventChains.getValue())
             return;
-        if (!eventcache.containsKey(e) || eventcache.get(e) > 30000L) {
-            eventchains.put(e, arr);
-            eventcache.put(e, System.currentTimeMillis());
-        }
+
+        long currentTime = System.currentTimeMillis();
+        eventcache.compute(eventName, (key, lastUpdated) -> {
+            if (lastUpdated == null || currentTime - lastUpdated > 30000) {
+                eventchains.put(eventName, listeners);
+                return currentTime;
+            }
+            return lastUpdated;
+        });
     }
 
     public String getEventChainReport() {
-        String gen = "";
         if (!configuration.getConfig().eventChains.getValue()) {
-            return "Event Chains is disabled by the configuration." + '\n';
+            return "Event Chains is disabled by the configuration.\n";
         }
 
-        if (eventchains.entrySet().size() == 0) {
-            return "No event chains found." + '\n';
+        if (eventchains.isEmpty()) {
+            return "No event chains found.\n";
         }
 
-        for (Entry<String, RegisteredListener[]> e : eventchains.entrySet()) {
-            String toadd = "";
-            String ename = e.getKey();
-
-            toadd += ename + ":" + '\n';
-
-            RegisteredListener[] reg = e.getValue();
-            for (RegisteredListener plug : reg) {
-                String pluginname = plug.getPlugin().getName();
-                if (pluginname.equals("AntiCheat"))
-                    pluginname = "self";
-
-                toadd += "- " + pluginname + '\n';
+        StringBuilder reportBuilder = new StringBuilder();
+        eventchains.forEach((eventName, listeners) -> {
+            reportBuilder.append(eventName).append(":\n");
+            for (RegisteredListener listener : listeners) {
+                String pluginName = listener.getPlugin().getName();
+                if ("AntiCheat".equals(pluginName)) {
+                    pluginName = "self";
+                }
+                reportBuilder.append("- ").append(pluginName).append("\n");
             }
+        });
 
-            gen += toadd + '\n';
-        }
-
-        return gen;
+        return reportBuilder.toString();
     }
 
     public AntiCheatRevolutions getPlugin() {
@@ -130,15 +128,13 @@ public final class AntiCheatManager {
 
     public static void close() {
         loggingManager.closeHandler();
-
         if (configuration.getConfig().enterprise.getValue()) {
             configuration.getEnterprise().database.shutdown();
         }
-        
+
         eventchains.clear();
         eventcache.clear();
-        
-        // Nullify
+
         plugin = null;
         configuration = null;
         loggingManager = null;
