@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,8 +70,8 @@ public final class FlightCheck {
 		}
 
 		int minAirTicks = 13;
-		if (player.hasPotionEffect(PotionEffectType.JUMP)) {
-			minAirTicks += VersionLib.getPotionLevel(player, PotionEffectType.JUMP) * 3;
+		if (player.hasPotionEffect(VersionLib.getJumpEffectType())) {
+			minAirTicks += VersionLib.getPotionLevel(player, VersionLib.getJumpEffectType()) * 3;
 		}
 
 		if (movementManager.getHalfMovementHistoryCounter() > 25) {
@@ -144,7 +145,7 @@ public final class FlightCheck {
 				&& Math.round(movementManager.getMotionY() * 1000) != 248
 				&& !(Math.round(movementManager.getMotionY() * 1000) == 333
 						&& Math.round(movementManager.getLastMotionY() * 1000) != 333)
-				&& !velocityTracker.isVelocitized() && !player.hasPotionEffect(PotionEffectType.JUMP)
+				&& !velocityTracker.isVelocitized() && !player.hasPotionEffect(VersionLib.getJumpEffectType())
 				&& (System.currentTimeMillis() - movementManager.getLastTeleport() >= checksConfig
 						.getInteger(CheckType.FLIGHT, "airClimb", "accountForTeleports"))
 				&& (!Utilities.isNearBed(distance.getTo()) || ((Utilities.isNearBed(distance.getTo())
@@ -158,7 +159,7 @@ public final class FlightCheck {
 
 		if (checksConfig.isSubcheckEnabled(CheckType.FLIGHT, "airClimb") && movementManager.getMotionY() > 0.42
 				&& movementManager.getAirTicks() > 2 && !velocityTracker.isVelocitized()
-				&& !player.hasPotionEffect(PotionEffectType.JUMP)
+				&& !player.hasPotionEffect(VersionLib.getJumpEffectType())
 				&& !(Math.round(movementManager.getMotionY() * 1000) == 425 && movementManager.getAirTicks() == 11)
 				&& (System.currentTimeMillis() - movementManager.getLastTeleport() >= checksConfig
 						.getInteger(CheckType.FLIGHT, "airClimb", "accountForTeleports"))

@@ -223,8 +223,8 @@ public final class SpeedCheck {
 			}
 
 			// Adjust for jump boost effects
-			if (player.hasPotionEffect(PotionEffectType.JUMP)) {
-				predict += VersionLib.getPotionLevel(player, PotionEffectType.JUMP) * 0.05D;
+			if (player.hasPotionEffect(VersionLib.getJumpEffectType())) {
+				predict += VersionLib.getPotionLevel(player, VersionLib.getJumpEffectType()) * 0.05D;
 			}
 
 			// Adjust for custom walking speed
@@ -514,8 +514,8 @@ public final class SpeedCheck {
 			base += checksConfig.getDouble(CheckType.SPEED, "verticalSpeed", "climbableCompensation"); // Default 0.04
 		}
 
-		if (player.hasPotionEffect(PotionEffectType.JUMP)) {
-			base += VersionLib.getPotionLevel(player, PotionEffectType.JUMP) * 0.2D;
+		if (player.hasPotionEffect(VersionLib.getJumpEffectType())) {
+			base += VersionLib.getPotionLevel(player, VersionLib.getJumpEffectType()) * 0.2D;
 		}
 		return base;
 	}

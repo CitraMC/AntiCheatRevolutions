@@ -19,6 +19,7 @@
  */
 package com.citramc.anticheatrevolutions.util;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -71,7 +72,8 @@ public class VersionLib {
 				break;
 			}
 		}
-		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || VersionLib.isGliding(player) || hasLevitationEffect
+		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || VersionLib.isGliding(player)
+				|| hasLevitationEffect
 				|| AntiCheatRevolutions.getManager().getBackend().justLevitated(player);
 	}
 
@@ -81,7 +83,7 @@ public class VersionLib {
 		}
 		return player.hasPotionEffect(PotionEffectType.SLOW_FALLING);
 	}
-	
+
 	public static boolean isRiptiding(final Player player) {
 		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
 			return false;
@@ -95,7 +97,7 @@ public class VersionLib {
 		}
 		return player.getInventory().getBoots().containsEnchantment(Enchantment.FROST_WALKER);
 	}
-	
+
 	public static boolean isSoulSpeed(final ItemStack boots) {
 		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.NETHER_UPDATE)) {
 			return false;
@@ -115,7 +117,7 @@ public class VersionLib {
 		if (player == null) {
 			return -1;
 		}
-		
+
 		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.CAVES_CLIFFS_1)) {
 			try {
 				final Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
@@ -166,8 +168,22 @@ public class VersionLib {
 		return player.isSwimming();
 	}
 
+	public static PotionEffectType getJumpEffectType() {
+		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.ARMORED_PAWS)) {
+			try {
+				Field field = PotionEffectType.class.getField("JUMP");
+				return (PotionEffectType) field.get(null);
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return PotionEffectType.JUMP_BOOST;
+	}
+
 	static {
-		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_20", "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12", "v1_11", "v1_10", "v1_9", "v1_8" });
+		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_20", "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14",
+				"v1_13", "v1_12", "v1_11", "v1_10", "v1_9", "v1_8" });
 		CURRENT_VERSION = MinecraftVersion.getCurrentVersion();
 	}
 }

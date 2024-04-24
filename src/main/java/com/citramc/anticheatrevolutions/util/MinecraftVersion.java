@@ -1,6 +1,7 @@
 /*
  *  ProtocolLib - Bukkit server library that allows access to the Minecraft protocol.
  *  Copyright (C) 2012 Kristian S. Stangeland
+ *  Copyright (c) 2024 CitraMC
  *
  *  This program is free software; you can redistribute it and/or modify it under the terms of the
  *  GNU General Public License as published by the Free Software Foundation; either version 2 of
@@ -43,6 +44,11 @@ public class MinecraftVersion implements Comparable<MinecraftVersion>, Serializa
 	 * Regular expression used to parse version strings.
 	 */
 	private static final Pattern VERSION_PATTERN = Pattern.compile(".*\\(.*MC.\\s*([a-zA-z0-9\\-.]+).*");
+
+	/**
+	 * Version 1.20.5 - the armored paws drop
+	 */
+	public static final MinecraftVersion ARMORED_PAWS = new MinecraftVersion("1.20.5");
 
 	/**
 	 * Version 1.20.4 - the decorated pot update

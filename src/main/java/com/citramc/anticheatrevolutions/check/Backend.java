@@ -547,7 +547,7 @@ public class Backend {
 	}
 
 	public boolean hasJumpPotion(final Player player) {
-		return player.hasPotionEffect(PotionEffectType.JUMP);
+		return player.hasPotionEffect(VersionLib.getJumpEffectType());
 	}
 
 	public boolean hasSpeedPotion(final Player player) {
