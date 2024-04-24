@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +20,17 @@
 
 package com.citramc.anticheatrevolutions.manage;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.bukkit.BanList.Type;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.api.event.PlayerPunishEvent;
@@ -37,7 +41,7 @@ import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 
 public final class UserManager {
-	private final List<User> users = new ArrayList<User>();
+	private Map<UUID, User> users = new ConcurrentHashMap<>();
 	private final AntiCheatManager manager;
 	private final Configuration config;
 
@@ -58,8 +62,7 @@ public final class UserManager {
 	 * @return User with UUID
 	 */
 	public User getUser(final UUID uuid) {
-		return this.users.parallelStream().filter(user -> user.getUUID().equals(uuid)).findFirst()
-				.orElseGet(() -> new User(uuid));
+		return users.computeIfAbsent(uuid, User::new);
 	}
 
 	/**
@@ -67,8 +70,9 @@ public final class UserManager {
 	 *
 	 * @return List of users
 	 */
+	@SuppressWarnings("unchecked")
 	public List<User> getUsers() {
-		return users;
+		return (List<User>) users;
 	}
 
 	/**
@@ -77,7 +81,8 @@ public final class UserManager {
 	 * @param user User to add
 	 */
 	public void addUser(final User user) {
-		users.add(user);
+		users.putIfAbsent(user.getUUID(), user);
+
 	}
 
 	/**
@@ -86,7 +91,7 @@ public final class UserManager {
 	 * @param user User to remove
 	 */
 	public void removeUser(final User user) {
-		users.remove(user);
+		users.remove(user.getUUID());
 	}
 
 	/**
@@ -103,8 +108,10 @@ public final class UserManager {
 	 *
 	 * @param group Group to find users of
 	 */
+	@SuppressWarnings("unchecked")
 	public List<User> getUsersInGroup(final Group group) {
-		return this.users.parallelStream().filter(user -> user.getGroup() == group).collect(Collectors.toList());
+		return ((List<User>) this.users).parallelStream().filter(user -> user.getGroup() == group)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -182,66 +189,84 @@ public final class UserManager {
 	 */
 	public void execute(final User user, final List<String> actions, final CheckType type, final String kickReason,
 			final List<String> warning, final String banReason) {
-		// Execute synchronously for thread safety when called from AsyncPlayerChatEvent
-		Bukkit.getScheduler().scheduleSyncDelayedTask(AntiCheatRevolutions.getPlugin(), new Runnable() {
-			@Override
-			public void run() {
-				if (user.getPlayer() == null) {
-					return;
-				}
-				
-				final PlayerPunishEvent event = new PlayerPunishEvent(user, actions);
-				{
-					Bukkit.getServer().getPluginManager().callEvent(event);
-					if (event.isCancelled()) {
-						return;
-					}
-				}
-				
-				final String name = user.getName();
-				for (String action : actions) {
-					action = action.replaceAll("%player%", name)
-							.replaceAll("%world%", user.getPlayer().getWorld().getName())
-							.replaceAll("%check%", type.name());
+		Player player = user.getPlayer();
+		if (player == null) {
+			return;
+		}
 
-					if (action.startsWith("COMMAND[")) {
-						for (String cmd : Utilities.getCommands(action)) {
-							Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), cmd);
-						}
-					} else if (action.equalsIgnoreCase("KICK")) {
-						user.getPlayer().kickPlayer(ChatColor.translateAlternateColorCodes('&', kickReason));
-						AntiCheatRevolutions.getPlugin().onPlayerKicked();
-						String msg = ChatColor.translateAlternateColorCodes('&',
-								config.getLang().KICK_BROADCAST().replaceAll("%player%", name) + " (" + type.getName()
-										+ ")");
-						if (!msg.equals("")) {
-							manager.log(msg);
-							manager.playerLog(msg);
-						}
-					} else if (action.equalsIgnoreCase("WARN")) {
-						List<String> message = warning;
-						for (String string : message) {
-							if (!string.equals("")) {
-								user.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', string));
-							}
-						}
-					} else if (action.equalsIgnoreCase("BAN")) {
-						Bukkit.getBanList(Type.NAME).addBan(user.getPlayer().getName(),
-								ChatColor.translateAlternateColorCodes('&', banReason), null, null);
-						user.getPlayer().kickPlayer(ChatColor.translateAlternateColorCodes('&', banReason));
-						String msg = ChatColor.translateAlternateColorCodes('&',
-								config.getLang().BAN_BROADCAST().replaceAll("%player%", name) + " (" + type.getName()
-										+ ")");
-						if (!msg.equals("")) {
-							manager.log(msg);
-							manager.playerLog(msg);
-						}
-					} else if (action.equalsIgnoreCase("RESET")) {
-						user.resetLevel();
-					}
-				}
+		// Execute asynchronously then sync for thread safety
+		Bukkit.getScheduler().runTaskAsynchronously(AntiCheatRevolutions.getPlugin(), () -> {
+			PlayerPunishEvent event = new PlayerPunishEvent(user, actions);
+			Bukkit.getServer().getPluginManager().callEvent(event);
+			if (event.isCancelled()) {
+				return;
+			}
+
+			Bukkit.getScheduler().runTask(AntiCheatRevolutions.getPlugin(),
+					() -> processActions(user, player, actions, type, kickReason, warning, banReason));
+		});
+	}
+
+	private void processActions(User user, Player player, List<String> actions, CheckType type, String kickReason,
+			List<String> warning, String banReason) {
+		actions.forEach(action -> {
+			action = action.replace("%player%", player.getName())
+					.replace("%world%", player.getWorld().getName())
+					.replace("%check%", type.name());
+
+			switch (action.toUpperCase().split("\\[")[0]) { // Handles "COMMAND[something]"
+				case "COMMAND":
+					String[] commands = Utilities.getCommands(action); // Assuming it returns String[]
+					Arrays.stream(commands).forEach(cmd -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd));
+					break;
+				case "KICK":
+					player.kickPlayer(ChatColor.translateAlternateColorCodes('&', kickReason));
+					broadcastAction("KICK_BROADCAST", player.getName(), type);
+					break;
+				case "WARN":
+					warning.forEach(msg -> player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg)));
+					break;
+				case "BAN":
+					Bukkit.getBanList(Type.NAME).addBan(player.getName(),
+							ChatColor.translateAlternateColorCodes('&', banReason), null, "AntiCheat System");
+					player.kickPlayer(ChatColor.translateAlternateColorCodes('&', banReason));
+					broadcastAction("BAN_BROADCAST", player.getName(), type);
+					break;
+				case "RESET":
+					user.resetLevel(); // Make sure User class has a resetLevel() method
+					break;
+				default:
+					manager.getLoggingManager().log("Unhandled action: " + action);
+					break;
 			}
 		});
+	}
+
+	private void broadcastAction(String actionKey, String playerName, CheckType type) {
+		String messagePattern;
+		switch (actionKey) {
+			case "BAN_BROADCAST":
+				messagePattern = manager.getConfiguration().getLang().BAN_BROADCAST();
+				break;
+			case "KICK_BROADCAST":
+				messagePattern = manager.getConfiguration().getLang().KICK_BROADCAST();
+				break;
+			default:
+				manager.getLoggingManager().log("Unhandled action key: " + actionKey);
+				return;
+		}
+
+		if (messagePattern == null) {
+			manager.getLoggingManager().log("Message pattern not found for key: " + actionKey);
+			return;
+		}
+
+		String message = ChatColor.translateAlternateColorCodes('&',
+				messagePattern.replace("%player%", playerName) + " (" + type.getName() + ")");
+		if (!message.isEmpty()) {
+			manager.getLoggingManager().log(message);
+			Bukkit.broadcast(message, "anticheat.broadcast");
+		}
 	}
 
 }
