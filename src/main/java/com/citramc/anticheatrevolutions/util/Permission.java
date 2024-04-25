@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,33 +37,44 @@ public enum Permission {
 	private static final String PERMISSION_ALL = "anticheat.*";
 	private static final String PERMISSION_SPAM = "anticheat.check.spam";
 
+	private final String permission;
+	private final String basePermission;
+
+	Permission() {
+		this.permission = "anticheat." + this.name().toLowerCase().replace("_", ".");
+		this.basePermission = "anticheat." + this.name().split("_")[0].toLowerCase() + ".*";
+	}
+
 	public static boolean getCommandExempt(CommandSender cs, String commandLabel) {
-		// Check permission, base, and all will have already been checked
-		return cs.hasPermission(CHECK_COMMANDSPAM.toString() + commandLabel);
+		return cs.hasPermission("anticheat.check.commandspam" + commandLabel);
 	}
 
 	public boolean get(CommandSender cs) {
-		if ((this == CHECK_CHATSPAM || this == CHECK_COMMANDSPAM) && cs.hasPermission(PERMISSION_SPAM))
-			return true;
-		return cs.hasPermission(toString()) || cs.hasPermission(getBase()) || cs.hasPermission(PERMISSION_ALL);
+		if (this == CHECK_CHATSPAM || this == CHECK_COMMANDSPAM) {
+			return cs.hasPermission(PERMISSION_SPAM);
+		}
+		return cs.hasPermission(permission) || cs.hasPermission(basePermission) || cs.hasPermission(PERMISSION_ALL);
 	}
 
 	public String getBase() {
-		return "anticheat." + this.name().toLowerCase().split("_")[0] + ".*";
+		return basePermission;
 	}
 
 	public String whichPermission(CommandSender cs) {
-		for (String s : new String[] { PERMISSION_ALL, getBase(), toString() }) {
-			if (cs.hasPermission(s)) {
-				return s;
-			}
+		if (cs.hasPermission(PERMISSION_ALL)) {
+			return PERMISSION_ALL;
+		}
+		if (cs.hasPermission(basePermission)) {
+			return basePermission;
+		}
+		if (cs.hasPermission(permission)) {
+			return permission;
 		}
 		return null;
 	}
 
 	@Override
 	public String toString() {
-		return "anticheat." + this.name().toLowerCase().replace("_", ".");
+		return permission;
 	}
-
 }
