@@ -1,6 +1,25 @@
+/*
+ * AntiCheatRevolutions for Bukkit and Spigot.
+ * Copyright (c) 2021 Marco Moesman
+ * Copyright (c) 2024 CitraMC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.citramc.anticheatrevolutions.util;
 
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.bukkit.util.Vector;
@@ -12,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public final class VelocityTracker {
 
 	private final long velocitizedTime;
-	private final List<VelocityWrapper> velocities = new ArrayList<>();
+	private final List<VelocityWrapper> velocities = new LinkedList<>();
 
 	public void registerVelocity(final Vector vector) {
 		this.velocities.add(new VelocityWrapper(vector.getX(), vector.getY(), vector.getZ(),
@@ -20,22 +39,31 @@ public final class VelocityTracker {
 	}
 
 	public void tick() {
-		this.velocities
-				.removeIf(velocity -> (velocity.getTimestamp() + this.velocitizedTime < System.currentTimeMillis()));
+		Iterator<VelocityWrapper> iterator = this.velocities.iterator();
+		long currentTime = System.currentTimeMillis();
+		while (iterator.hasNext()) {
+			if (iterator.next().getTimestamp() + this.velocitizedTime < currentTime) {
+				iterator.remove();
+			}
+		}
 	}
-	
+
 	public double getHorizontal() {
-		return Math
-				.sqrt(this.velocities.parallelStream().mapToDouble(VelocityWrapper::getHorizontal).max().orElse(0.0D));
+		return this.velocities.stream()
+				.mapToDouble(VelocityWrapper::getHorizontal)
+				.max()
+				.orElse(0.0);
 	}
-	
+
 	public double getVertical() {
-		return Math
-				.sqrt(this.velocities.parallelStream().mapToDouble(VelocityWrapper::getVertical).max().orElse(0.0D));
+		return this.velocities.stream()
+				.mapToDouble(VelocityWrapper::getVertical)
+				.max()
+				.orElse(0.0);
 	}
-	
+
 	public boolean isVelocitized() {
-		return this.velocities.size() != 0;
+		return !this.velocities.isEmpty();
 	}
 
 	@RequiredArgsConstructor
@@ -45,5 +73,5 @@ public final class VelocityTracker {
 		private final double horizontal, vertical;
 		private final long timestamp;
 	}
-	
+
 }
