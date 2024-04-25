@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +41,7 @@ public class UpdateManager {
 	public UpdateManager() {
 		update();
 	}
-	
+
 	public void update() {
 		this.latestVersion = getOnlineData(SPIGOT_VERSION_URL);
 		if (this.latestVersion == null) {
@@ -48,49 +49,41 @@ public class UpdateManager {
 			this.isAhead = false;
 			return;
 		}
-		
-		int splitCompare = 0;
+
 		try {
 			VersionSplit currentSplit = new VersionSplit(AntiCheatRevolutions.getVersion());
 			VersionSplit newSplit = new VersionSplit(this.latestVersion);
-			splitCompare = currentSplit.compareTo(newSplit);
-		} catch (Exception e) {}
-		this.isLatest = splitCompare >= 0;
-		this.isAhead = splitCompare > 0;
+			int splitCompare = currentSplit.compareTo(newSplit);
+			this.isLatest = splitCompare >= 0;
+			this.isAhead = splitCompare > 0;
+		} catch (Exception e) {
+			AntiCheatRevolutions.getPlugin().getLogger().severe("Failed to compare versions: " + e.getMessage());
+		}
 	}
 
 	private String getOnlineData(final String url) {
-		String data = null;
-		InputStream stream = null;
-		try {
-			stream = new URL(url).openStream();
-			final BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-			final StringBuilder builder = new StringBuilder();
-			int readChar;
-			while ((readChar = reader.read()) != -1) {
-				builder.append((char) readChar);
+		try (InputStream stream = new URL(url).openStream();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+			StringBuilder builder = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				builder.append(line);
 			}
-			data = builder.toString();
-			reader.close();
-		} catch (final IOException exception) {}
-		finally {
-			if (stream != null) {
-				try {
-					stream.close();
-				} catch (final IOException e) {}
-			}
+			return builder.toString();
+		} catch (final IOException exception) {
+			AntiCheatRevolutions.getPlugin().getLogger().warning("Error reading from URL: " + exception.getMessage());
+			return null;
 		}
-		return data;
 	}
 
 	public boolean isLatest() {
 		return this.isLatest;
 	}
-	
+
 	public boolean isAhead() {
 		return this.isAhead;
 	}
-	
+
 	public String getCurrentVersion() {
 		return AntiCheatRevolutions.getVersion();
 	}
@@ -103,63 +96,35 @@ public class UpdateManager {
 		private final int major, minor, build;
 		private boolean prerelease = false;
 
-		public VersionSplit(String version) throws Exception {
-			if (version.endsWith("-ALPHA")) {
-				version = version.substring(0, version.length() - 6);
-			} else if (version.endsWith("-SNAPSHOT")) {
-				version = version.substring(0, version.length() - 9);
-			} else if (version.endsWith("-PRE")) {
-				this.prerelease = true;
-				version = version.substring(0, version.length() - 4);
+		public VersionSplit(String version) throws IllegalArgumentException {
+			String[] parts = version.split("-");
+			if (parts.length > 1 && parts[1].matches("RC|PRE|SNAPSHOT|BETA|ALPHA")) {
+				prerelease = true;
 			}
 
-			final String[] versionSplit = version.split("\\.");
-			if (versionSplit.length != 3) {
-				// Illegal version
-				throw new Exception("Version " + version + " is illegal!");
+			String[] versionNumbers = parts[0].split("\\.");
+			if (versionNumbers.length != 3) {
+				throw new IllegalArgumentException("Version format must be major.minor.build");
 			}
 
-			try {
-				final int major = Integer.parseInt(versionSplit[0]);
-				final int minor = Integer.parseInt(versionSplit[1]);
-				final int build = Integer.parseInt(versionSplit[2]);
-				if (major <= 0) {
-					throw new Exception("Illegal version!");
-				}
-				
-				this.major = major;
-				this.minor = minor;
-				this.build = build;
-			} catch (Exception e) {
-				throw new Exception("Illegal version!");
-			}
+			this.major = Integer.parseInt(versionNumbers[0]);
+			this.minor = Integer.parseInt(versionNumbers[1]);
+			this.build = Integer.parseInt(versionNumbers[2]);
 		}
 
 		@Override
 		public int compareTo(final VersionSplit other) {
-			if (other.major == this.major) {
-				if (other.minor == this.minor) {
-					if (other.build == this.build) {
-						if (!this.prerelease) {
-							return 0;
-						} else {
-							return -1;
-						}
+			int result = Integer.compare(this.major, other.major);
+			if (result == 0) {
+				result = Integer.compare(this.minor, other.minor);
+				if (result == 0) {
+					result = Integer.compare(this.build, other.build);
+					if (result == 0) {
+						return Boolean.compare(other.prerelease, this.prerelease);
 					}
-					if (other.build > this.build) {
-						return -1;
-					}
-					return 1;
 				}
-				if (other.minor > this.minor) {
-					return -1;
-				}
-				return 1;
 			}
-			if (other.major > this.major) {
-				return -1;
-			}
-			return 1;
+			return result;
 		}
 
 		public int getMajor() {
@@ -174,5 +139,4 @@ public class UpdateManager {
 			return build;
 		}
 	}
-
 }
