@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,46 +22,56 @@ package com.citramc.anticheatrevolutions.util;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
- * Friction data library to prevent using Reflection or NMS
+ * Friction data library to prevent using Reflection or NMS.
  */
 public enum Friction {
-
 	DEFAULT(0.6f),
 	ICE(0.98f),
 	BLUE_ICE(0.989f),
 	PACKED_ICE(0.98f),
-	SLIME_BLOCK(0.8f),
-	;
-	
+	SLIME_BLOCK(0.8f);
+
 	private final float factor;
+	private static final Map<Material, Friction> frictionMap = new EnumMap<>(Material.class);
+
+	// Static initializer to populate the map
+	static {
+		for (Friction friction : values()) {
+			try {
+				Material material = Material.valueOf(friction.name());
+				frictionMap.put(material, friction);
+			} catch (IllegalArgumentException ignored) {
+				// This block will ignore materials that don't directly correspond to friction
+				// values
+			}
+		}
+	}
 
 	Friction(final float factor) {
 		this.factor = factor;
 	}
 
 	/**
-	 * Gets the friction factor
-	 * 
+	 * Gets the friction factor.
+	 *
 	 * @return the factor
 	 */
 	public float getFactor() {
 		return this.factor;
 	}
-	
+
 	/**
-	 * Gets the friction factor for the given block
-	 * 
+	 * Gets the friction factor for the given block.
+	 *
 	 * @param block The block
 	 * @return the friction factor
 	 */
 	public static float getFactor(final Block block) {
-		final Material type = block.getType();
-		try {
-			return valueOf(type.name()).getFactor();
-		} catch (final Exception exception) {
-			return DEFAULT.getFactor();
-		}
+		Friction friction = frictionMap.get(block.getType());
+		return (friction != null) ? friction.getFactor() : DEFAULT.getFactor();
 	}
-	
 }
