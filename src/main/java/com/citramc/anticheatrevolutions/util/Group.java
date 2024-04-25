@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +21,7 @@
 package com.citramc.anticheatrevolutions.util;
 
 import org.bukkit.ChatColor;
-
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,22 +30,18 @@ public class Group {
 	private String name;
 	private int level;
 	private ChatColor color = ChatColor.RED;
-	private List<String> actions = new ArrayList<String>();
+	private List<String> actions;
 
 	public Group(String name, int level, String color, List<String> actions) {
-
 		this.name = name;
 		this.level = level;
 		this.actions = actions;
 
-		ChatColor c = ChatColor.valueOf(color);
-		if (c == null) {
-			AntiCheatRevolutions.getPlugin().getLogger()
-					.warning("Event '" + name + "' was initialized with the color '" + color + "' which is invalid.");
-			AntiCheatRevolutions.getPlugin().getLogger().warning(
-					"This event will not run properly. See http://jd.bukkit.org/apidocs/org/bukkit/ChatColor.html#enum_constant_summary for a list of valid colors");
-		} else {
-			this.color = c;
+		try {
+			this.color = ChatColor.valueOf(color.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			AntiCheatRevolutions.getPlugin().getLogger().warning("Event '" + name
+					+ "' was initialized with an invalid color '" + color + "'. Using default color RED.");
 		}
 	}
 
@@ -68,28 +62,22 @@ public class Group {
 	}
 
 	public static Group load(String string) {
-		try {
-			if (string.split(" : ").length == 4) {
-				String name = string.split(" : ")[0];
-				int level = Integer.parseInt(string.split(" : ")[1]);
-				String color = string.split(" : ")[2];
-				List<String> actions = Arrays.asList(string.split(" : ")[3].split(","));
-				return new Group(name, level, color, actions);
-			} else {
-				throw new Exception();
-			}
-		} catch (Exception ex) {
-			AntiCheatRevolutions.getPlugin().getLogger()
-					.warning("An event was initialized with an invalid string: '" + string + "'");
-			AntiCheatRevolutions.getPlugin().getLogger().warning(
-					"The proper format is: 'name : threshold : color : action' such as 'High : 50 : RED : KICK'");
-			AntiCheatRevolutions.getPlugin().getLogger().warning("This event will NOT run. (" + ex.getMessage() + ")");
+		String[] parts = string.split(" : ");
+		if (parts.length == 4) {
+			String name = parts[0];
+			int level = Integer.parseInt(parts[1]);
+			String color = parts[2];
+			List<String> actions = Arrays.asList(parts[3].split(","));
+			return new Group(name, level, color, actions);
+		} else {
+			AntiCheatRevolutions.getPlugin().getLogger().warning("Failed to initialize Group from string: '" + string
+					+ "'. Expected format: 'name : level : color : actions'");
 			return null;
 		}
 	}
 
 	@Override
 	public String toString() {
-		return name + " : " + level + " : " + color.name() + " : " + Utilities.listToCommaString(actions);
+		return name + " : " + level + " : " + color.name() + " : " + String.join(", ", actions);
 	}
 }
