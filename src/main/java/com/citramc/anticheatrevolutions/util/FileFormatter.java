@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,14 +27,23 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 public class FileFormatter extends Formatter {
-	private static final DateFormat FORMAT = new SimpleDateFormat("h:mm:ss");
+	private static final ThreadLocal<DateFormat> DATE_FORMAT = ThreadLocal
+			.withInitial(() -> new SimpleDateFormat("h:mm:ss"));
 	private static final String LINE_SEP = System.getProperty("line.separator");
 
 	@Override
 	public String format(LogRecord record) {
-		StringBuilder output = new StringBuilder().append("[").append(record.getLevel()).append('|')
-				.append(FORMAT.format(new Date(record.getMillis()))).append("]: ").append(record.getMessage())
-				.append(' ').append(LINE_SEP);
+		String timestamp = DATE_FORMAT.get().format(new Date(record.getMillis()));
+
+		StringBuilder output = new StringBuilder()
+				.append('[')
+				.append(record.getLevel())
+				.append('|')
+				.append(timestamp)
+				.append("]: ")
+				.append(record.getMessage())
+				.append(LINE_SEP);
+
 		return output.toString();
 	}
 }
