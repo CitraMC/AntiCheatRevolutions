@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,65 +22,118 @@ package com.citramc.anticheatrevolutions.util;
 
 import org.bukkit.Location;
 
+/**
+ * Represents the distance between two points in a Minecraft world.
+ */
 public class Distance {
-	private final double l1Y;
-	private final double l2Y;
+	private final double fromY;
+	private final double toY;
 
-	private final double XDiff;
-	private final double YDiff;
-	private final double ZDiff;
-	
+	private final double xDifference;
+	private final double yDifference;
+	private final double zDifference;
+
 	private final Location from;
 	private final Location to;
 
+	/**
+	 * Constructs a new Distance object calculating differences between two
+	 * locations.
+	 *
+	 * @param from The starting location.
+	 * @param to   The ending location.
+	 */
 	public Distance(Location from, Location to) {
-		l1Y = to.getY();
-		l2Y = from.getY();
+		if (from == null || to == null) {
+			throw new IllegalArgumentException("Locations cannot be null");
+		}
 
-		XDiff = Math.abs(to.getX() - from.getX());
-		ZDiff = Math.abs(to.getZ() - from.getZ());
-		YDiff = Math.abs(l1Y - l2Y);
-		
+		this.fromY = from.getY();
+		this.toY = to.getY();
+
+		this.xDifference = Math.abs(to.getX() - from.getX());
+		this.yDifference = Math.abs(to.getY() - from.getY());
+		this.zDifference = Math.abs(to.getZ() - from.getZ());
+
 		this.from = from;
 		this.to = to;
 	}
-	
-	public Distance() {
-		l1Y = 0;
-		l2Y = 0;
 
-		XDiff = 0;
-		ZDiff = 0;
-		YDiff = 0;
-		
+	/**
+	 * Default constructor for Distance, initializing locations to null and
+	 * differences to zero.
+	 */
+	public Distance() {
+		fromY = 0;
+		toY = 0;
+
+		xDifference = 0;
+		yDifference = 0;
+		zDifference = 0;
+
 		this.from = null;
 		this.to = null;
 	}
 
+	/**
+	 * Gets the Y-coordinate of the from location.
+	 *
+	 * @return The Y-coordinate of the from location.
+	 */
 	public double fromY() {
-		return l2Y;
+		return fromY;
 	}
 
+	/**
+	 * Gets the Y-coordinate of the to location.
+	 *
+	 * @return The Y-coordinate of the to location.
+	 */
 	public double toY() {
-		return l1Y;
+		return toY;
 	}
 
+	/**
+	 * Gets the difference in the X-coordinates of the two locations.
+	 *
+	 * @return The X-coordinate difference.
+	 */
 	public double getXDifference() {
-		return XDiff;
+		return xDifference;
 	}
 
+	/**
+	 * Gets the difference in the Z-coordinates of the two locations.
+	 *
+	 * @return The Z-coordinate difference.
+	 */
 	public double getZDifference() {
-		return ZDiff;
+		return zDifference;
 	}
 
+	/**
+	 * Gets the difference in the Y-coordinates of the two locations.
+	 *
+	 * @return The Y-coordinate difference.
+	 */
 	public double getYDifference() {
-		return YDiff;
+		return yDifference;
 	}
-	
+
+	/**
+	 * Gets the initial location from which distance is calculated.
+	 *
+	 * @return The initial location.
+	 */
 	public Location getFrom() {
 		return this.from;
 	}
-	
+
+	/**
+	 * Gets the final location to which distance is calculated.
+	 *
+	 * @return The final location.
+	 */
 	public Location getTo() {
 		return this.to;
 	}
