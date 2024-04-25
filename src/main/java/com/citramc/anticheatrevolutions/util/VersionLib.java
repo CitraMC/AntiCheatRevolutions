@@ -34,8 +34,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
-
 public class VersionLib {
 
 	public static final MinecraftVersion CURRENT_VERSION;
@@ -46,110 +44,89 @@ public class VersionLib {
 	}
 
 	public static boolean isSupported() {
-		for (String versionId : SUPPORTED_VERSIONS) {
-			if (getVersion().startsWith(versionId)) {
-				return true;
-			}
-		}
-		return false;
+		String version = getVersion();
+		return SUPPORTED_VERSIONS.stream().anyMatch(version::startsWith);
 	}
 
 	public static boolean isOfVersion(final String versionId) {
-		if (getVersion().startsWith(versionId)) {
-			return true;
-		}
-		return false;
+		return getVersion().startsWith(versionId);
 	}
 
 	public static boolean isFlying(final Player player) {
 		boolean hasLevitationEffect = false;
 		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
 			for (PotionEffect effect : player.getActivePotionEffects()) {
-				if (!VersionLib.isLevitationEffect(effect)) {
-					continue;
+				if (effect.getType().equals(PotionEffectType.LEVITATION)) {
+					hasLevitationEffect = true;
+					break;
 				}
-				hasLevitationEffect = true;
-				break;
 			}
 		}
-		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || VersionLib.isGliding(player)
-				|| hasLevitationEffect
-				|| AntiCheatRevolutions.getManager().getBackend().justLevitated(player);
+		return player.isFlying() || player.getGameMode() == GameMode.SPECTATOR || isGliding(player)
+				|| hasLevitationEffect;
 	}
 
 	public static boolean isSlowFalling(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
-			return false;
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
+			return player.hasPotionEffect(PotionEffectType.SLOW_FALLING);
 		}
-		return player.hasPotionEffect(PotionEffectType.SLOW_FALLING);
+		return false;
 	}
 
 	public static boolean isRiptiding(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
-			return false;
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
+			return player.isRiptiding();
 		}
-		return player.isRiptiding();
+		return false;
 	}
 
 	public static boolean isFrostWalk(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE) || player.getInventory().getBoots() == null) {
-			return false;
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE) || player.getInventory().getBoots() == null) {
+			return player.getInventory().getBoots().containsEnchantment(Enchantment.FROST_WALKER);
 		}
-		return player.getInventory().getBoots().containsEnchantment(Enchantment.FROST_WALKER);
+		return false;
 	}
 
 	public static boolean isSoulSpeed(final ItemStack boots) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.NETHER_UPDATE)) {
-			return false;
+		if (boots != null && CURRENT_VERSION.isAtLeast(MinecraftVersion.NETHER_UPDATE)) {
+			return boots.containsEnchantment(Enchantment.getByName("SOUL_SPEED"));
 		}
-		return boots.containsEnchantment(Enchantment.SOUL_SPEED);
+		return false;
 	}
 
 	public static ItemStack getItemInHand(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
-			return player.getInventory().getItemInHand();
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
+			return player.getInventory().getItemInMainHand();
 		}
-		return player.getInventory().getItemInMainHand();
+		return player.getInventory().getItemInHand();
 	}
 
 	public static int getPlayerPing(final Player player) {
-		// May be called with offline (null) player
-		if (player == null) {
-			return -1;
-		}
-
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.CAVES_CLIFFS_1)) {
-			try {
-				final Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
-				final int ping = (int) entityPlayer.getClass().getField("ping").get(entityPlayer);
-				return ping;
-			} catch (Exception e) {
+		try {
+			if (player == null)
 				return -1;
-			}
-		} else {
-			return player.getPing();
+			final Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
+			return (int) entityPlayer.getClass().getField("ping").get(entityPlayer);
+		} catch (Exception e) {
+			return -1;
 		}
 	}
 
 	public static Block getTargetBlock(final Player player, final int distance) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
-			return player.getTargetBlock((Set<Material>) null, distance);
+		if (CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
+			return player.getTargetBlockExact(distance);
 		}
-		return player.getTargetBlockExact(distance);
+		return player.getTargetBlock((Set<Material>) null, distance);
 	}
 
 	public static boolean isGliding(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
-			return false;
-		}
-		return player.isGliding();
+		return CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE) && player.isGliding();
+
 	}
 
 	public static boolean isLevitationEffect(final PotionEffect effect) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)) {
-			return false;
-		}
-		return effect.getType().equals(PotionEffectType.LEVITATION);
+		return CURRENT_VERSION.isAtLeast(MinecraftVersion.COMBAT_UPDATE)
+				&& effect.getType().equals(PotionEffectType.LEVITATION);
 	}
 
 	public static int getPotionLevel(final Player player, final PotionEffectType type) {
@@ -162,28 +139,29 @@ public class VersionLib {
 	}
 
 	public static boolean isSwimming(final Player player) {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE)) {
-			return false;
-		}
-		return player.isSwimming();
+		return CURRENT_VERSION.isAtLeast(MinecraftVersion.AQUATIC_UPDATE) && player.isSwimming();
 	}
 
 	public static PotionEffectType getJumpEffectType() {
-		if (!CURRENT_VERSION.isAtLeast(MinecraftVersion.ARMORED_PAWS)) {
-			try {
+		try {
+			if (CURRENT_VERSION.isAtLeast(MinecraftVersion.ARMORED_PAWS)) {
+				return PotionEffectType.getByName("JUMP_BOOST");
+			} else {
 				Field field = PotionEffectType.class.getField("JUMP");
 				return (PotionEffectType) field.get(null);
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				e.printStackTrace();
 			}
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			e.printStackTrace();
+			return null;
 		}
-
-		return PotionEffectType.JUMP_BOOST;
 	}
 
 	static {
-		SUPPORTED_VERSIONS = Arrays.asList(new String[] { "v1_20", "v1_19", "v1_18", "v1_17", "v1_16", "v1_15", "v1_14",
-				"v1_13", "v1_12", "v1_11", "v1_10", "v1_9", "v1_8" });
+		SUPPORTED_VERSIONS = Arrays.asList(new String[] {
+				"v1_20", "v1_19",
+				"v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12",
+				"v1_11", "v1_10", "v1_9", "v1_8"
+		});
 		CURRENT_VERSION = MinecraftVersion.getCurrentVersion();
 	}
 }
