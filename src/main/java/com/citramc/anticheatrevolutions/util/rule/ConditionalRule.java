@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +59,7 @@ import com.citramc.anticheatrevolutions.util.User;
 public class ConditionalRule extends Rule {
 
 	private static final ScriptEngineManager FACTORY = new ScriptEngineManager();
-	private static final ScriptEngine ENGINE;
+	private static final ScriptEngine ENGINE = setupScriptEngine();
 
 	private static final String TRUE_DELIMITER = "\\?";
 	private static final String FALSE_DELIMITER = ":";
@@ -70,55 +71,51 @@ public class ConditionalRule extends Rule {
 
 	@Override
 	public boolean check(User user, CheckType type) {
-		// No nashorn support
 		if (ENGINE == null) {
+			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "Script engine is unavailable.");
 			return true;
 		}
 
 		try {
-			// Load all variables
-			SortedMap<String, Object> map = getVariables(user, type);
-			for (String key : map.keySet()) {
-				ENGINE.put(key, map.get(key));
-			}
+			SortedMap<String, Object> variables = getVariables(user, type);
+			variables.forEach(ENGINE::put);
 
-			boolean value = (Boolean) ENGINE.eval(getString().split(TRUE_DELIMITER)[0]);
-			// Yo dawg I heard you like conditionals...
-			String next = value ? getString().split(TRUE_DELIMITER)[1].split(FALSE_DELIMITER)[0]
-					: getString().split(TRUE_DELIMITER)[1].split(FALSE_DELIMITER)[1];
+			String condition = getString().split(TRUE_DELIMITER)[0];
+			Boolean result = (Boolean) ENGINE.eval(condition);
 
+			String next = getString().split(TRUE_DELIMITER)[1].split(result ? TRUE_DELIMITER : FALSE_DELIMITER)[0];
 			execute(next, user, type);
-			return value;
+
+			return result;
 		} catch (ScriptException e) {
-			e.printStackTrace();
+			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "Error evaluating rule: " + e.getMessage());
 		}
 		return true;
 	}
 
-	private void execute(String string, User user, CheckType type) {
-		// If we're told to do nothing
-		if (string.equalsIgnoreCase("null") || string.equalsIgnoreCase("none"))
+	private void execute(String command, User user, CheckType type) {
+		if (command.equalsIgnoreCase("null") || command.equalsIgnoreCase("none")) {
 			return;
+		}
 
-		// If this string is a new conditional statement
-		if (TYPE.matches(string)) {
-			new ConditionalRule(string).check(user, type);
-		} else if (isVariableSet(string)) {
-			setVariable(string.split("=")[0], string.split("=")[1], user);
-		} else if (isFunction(string)) {
-			doFunction(string, type, user);
+		if (TYPE.matches(command)) {
+			new ConditionalRule(command).check(user, type);
+		} else if (isVariableSet(command)) {
+			String[] parts = command.split("=");
+			setVariable(parts[0], parts[1], user);
+		} else if (isFunction(command)) {
+			doFunction(command, type, user);
 		}
 	}
 
-	static {
-		// Nashorn was removed in Java 15, so we disable the rules engine until we
-		// change it
-		if (Double.parseDouble(System.getProperty("java.specification.version")) < 15) {
-			ENGINE = FACTORY.getEngineByName("js");
+	private static ScriptEngine setupScriptEngine() {
+		double javaVersion = Double.parseDouble(System.getProperty("java.specification.version"));
+		if (javaVersion < 15) {
+			return FACTORY.getEngineByName("nashorn");
 		} else {
-			ENGINE = null;
-			Bukkit.getConsoleSender().sendMessage(AntiCheatRevolutions.PREFIX + ChatColor.RED
-					+ "Java 15+ currently does not support ACR's rule engine. Rules.yml is disabled.");
+			Bukkit.getConsoleSender().sendMessage(AntiCheatRevolutions.PREFIX + ChatColor.RED +
+					"Java 15+ currently does not support Nashorn JavaScript engine. Conditional rules are disabled.");
+			return null;
 		}
 	}
 }
