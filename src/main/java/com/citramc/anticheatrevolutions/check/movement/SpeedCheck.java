@@ -89,7 +89,7 @@ public final class SpeedCheck {
 		final VelocityTracker velocityTracker = user.getVelocityTracker();
 		
 		final double motion = movementManager.getDistanceXZ();
-		final boolean boxedIn = movementManager.isTopSolid() && movementManager.isBottomSolid();
+		final boolean boxedIn = movementManager.isHasBoxedIn() || movementManager.isHadBoxedIn();
 		final boolean sprinting = true; // TODO do this using packets
 		
 		double buffer = PREDICT_BUFFER.getOrDefault(uuid, 0.0);
@@ -148,7 +148,7 @@ public final class SpeedCheck {
 		
 		final Checks checksConfig = AntiCheatRevolutions.getManager().getConfiguration().getChecks();
 		final double distanceXZ = movementManager.getDistanceXZ();
-		final boolean boxedIn = movementManager.isTopSolid() && movementManager.isBottomSolid();
+		final boolean boxedIn = movementManager.isHasBoxedIn() || movementManager.isHadBoxedIn();
 
 		// AirSpeed
 		if (checksConfig.isSubcheckEnabled(CheckType.SPEED, "airSpeed") && movementManager.getAirTicks() > 1

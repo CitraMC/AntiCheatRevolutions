@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -169,6 +170,13 @@ public final class MovementManager {
 	@Setter
 	private double adjusted;
 
+	// If the player is boxed
+	@Getter
+	private boolean hasBoxedIn = false;
+	// If the player was boxed on previous tick
+	@Getter
+	private boolean hadBoxedIn = false;
+
 	@SuppressWarnings("deprecation")
 	public void handle(final Player player, final Location from, final Location to, final Distance distance) {
 		this.wasOnGround = this.onGround;
@@ -314,6 +322,9 @@ public final class MovementManager {
 				this.halfMovementHistoryCounter--;
 			}
 		}
+
+		this.hadBoxedIn = this.hasBoxedIn;
+		this.hasBoxedIn = this.isTopSolid() && this.isBottomSolid();
 
 		this.lastUpdate = System.currentTimeMillis();
 		
