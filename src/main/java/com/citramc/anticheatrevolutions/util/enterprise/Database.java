@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +67,9 @@ public class Database {
     private BukkitTask eventTask;
     private BukkitTask syncTask;
 
-    public Database(DatabaseType type, String hostname, int port, String username, String password, String prefix, String schema, String serverName, String logInterval, String logLife, boolean syncLevels, String syncInterval) {
+    public Database(DatabaseType type, String hostname, int port, String username, String password, String prefix,
+            String schema, String serverName, String logInterval, String logLife, boolean syncLevels,
+            String syncInterval) {
         this.type = type;
         this.hostname = hostname;
         this.port = port;
@@ -82,20 +85,21 @@ public class Database {
         this.syncLevels = syncLevels;
         this.syncInterval = Utilities.lifeToSeconds(syncInterval);
 
-        sqlLogEvent = "INSERT INTO " + prefix + EVENTS_TABLE +
-                " (server, user, check_type) " +
-                "VALUES (?, ?, ?)";
+        initializeSQL();
+        connect();
+    }
 
-        sqlCleanEvents = "DELETE FROM " + prefix + EVENTS_TABLE + " " +
-                "WHERE time < (CURRENT_TIMESTAMP - INTERVAL ? SECOND)";
-
+    private void initializeSQL() {
+        sqlLogEvent = "INSERT INTO " + prefix + EVENTS_TABLE + " (server, user, check_type) VALUES (?, ?, ?)";
+        sqlCleanEvents = "DELETE FROM " + prefix + EVENTS_TABLE
+                + " WHERE time < (CURRENT_TIMESTAMP - INTERVAL ? SECOND)";
         sqlCreateEvents = "CREATE TABLE IF NOT EXISTS " + prefix + EVENTS_TABLE + "(" +
-                "  `id` INT NOT NULL AUTO_INCREMENT," +
-                "  `server` VARCHAR(45) NOT NULL," +
-                "  `time` TIMESTAMP NOT NULL DEFAULT NOW()," +
-                "  `user` VARCHAR(45) NOT NULL," +
-                "  `check_type` VARCHAR(45) NOT NULL," +
-                "  PRIMARY KEY (`id`));";
+                "id INT NOT NULL AUTO_INCREMENT," +
+                "server VARCHAR(45) NOT NULL," +
+                "time TIMESTAMP NOT NULL DEFAULT NOW()," +
+                "user VARCHAR(45) NOT NULL," +
+                "check_type VARCHAR(45) NOT NULL," +
+                "PRIMARY KEY (id));";
     }
 
     public DatabaseType getType() {
@@ -131,47 +135,43 @@ public class Database {
 
         try {
             connection = DriverManager.getConnection(url, username, password);
-            eventBatch = connection.prepareStatement(sqlLogEvent);
-
-            connection.prepareStatement(sqlCreateEvents).executeUpdate();
-
             connection.setAutoCommit(false);
 
-            if (logInterval != 0) {
-                eventTask = Bukkit.getScheduler().runTaskTimerAsynchronously(AntiCheatRevolutions.getPlugin(), new Runnable() {
-                    @Override
-                    public void run() {
-                        flushEvents();
-                    }
-                }, logInterval * 20, logInterval * 20);
-            }
+            connection.prepareStatement(sqlCreateEvents).executeUpdate();
+            eventBatch = connection.prepareStatement(sqlLogEvent);
 
-            if(syncLevels && syncInterval != 0) {
-                syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(AntiCheatRevolutions.getPlugin(), new Runnable() {
-                    @Override
-                    public void run() {
-                        syncUsers();
-                    }
-                }, syncInterval * 20, syncInterval * 20);
-            }
-
-            AntiCheatRevolutions.getPlugin().verboseLog("Connected to the database.");
+            scheduleTasks();
         } catch (SQLException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning("Failed to connect to the database: " + e.getMessage());
+        }
+    }
+
+    private void scheduleTasks() {
+        if (logInterval > 0) {
+            eventTask = Bukkit.getScheduler().runTaskTimerAsynchronously(AntiCheatRevolutions.getPlugin(),
+                    this::flushEvents, logInterval * 20, logInterval * 20);
+        }
+
+        if (syncLevels && syncInterval > 0) {
+            syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(AntiCheatRevolutions.getPlugin(),
+                    this::syncUsers, syncInterval * 20, syncInterval * 20);
         }
     }
 
     public void shutdown() {
-        if (eventTask != null) eventTask.cancel();
-        if (syncTask != null) syncTask.cancel();
-
-        flushEvents();
+        if (eventTask != null)
+            eventTask.cancel();
+        if (syncTask != null)
+            syncTask.cancel();
 
         try {
-            eventBatch.close();
-            connection.close();
+            flushEvents();
+            if (eventBatch != null)
+                eventBatch.close();
+            if (connection != null)
+                connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning("Error shutting down database connection: " + e.getMessage());
         }
     }
 
@@ -187,7 +187,7 @@ public class Database {
 
             eventBatch.addBatch();
         } catch (SQLException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning("Failed to log event: " + e.getMessage());
         }
     }
 
@@ -195,10 +195,9 @@ public class Database {
         try {
             eventBatch.executeBatch();
             connection.commit();
-
-            eventBatch = connection.prepareStatement(sqlLogEvent);
+            eventBatch.clearBatch();
         } catch (SQLException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning("Error flushing events: " + e.getMessage());
         }
     }
 
@@ -214,7 +213,8 @@ public class Database {
                         statement.executeUpdate();
 
                         connection.commit();
-                        AntiCheatRevolutions.getPlugin().verboseLog("Cleaned " + statement.getUpdateCount() + " old events from the database");
+                        AntiCheatRevolutions.getPlugin()
+                                .verboseLog("Cleaned " + statement.getUpdateCount() + " old events from the database");
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
