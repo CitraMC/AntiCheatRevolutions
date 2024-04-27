@@ -172,10 +172,8 @@ public final class MovementManager {
 
 	// If the player is boxed
 	@Getter
-	private boolean hasBoxedIn = false;
-	// If the player was boxed on previous tick
-	@Getter
-	private boolean hadBoxedIn = false;
+	// State variable to track the player's boxed-in status for four ticks
+	private int boxedInHistory = 0; // Uses lower four bits: current, previous, two ticks ago, three ticks ago
 
 	@SuppressWarnings("deprecation")
 	public void handle(final Player player, final Location from, final Location to, final Distance distance) {
@@ -323,8 +321,12 @@ public final class MovementManager {
 			}
 		}
 
-		this.hadBoxedIn = this.hasBoxedIn;
-		this.hasBoxedIn = this.isTopSolid() && this.isBottomSolid();
+        // Shift the history right to make room for the new state
+        boxedInHistory = (boxedInHistory << 1) & 0b1111; // Keep only the last four states
+        // Set the newest state (1 if boxed, 0 if not)
+        if (isTopSolid() && isBottomSolid()) {
+            boxedInHistory |= 0b0001; // Set the last bit if currently boxed in
+        }
 
 		this.lastUpdate = System.currentTimeMillis();
 		
