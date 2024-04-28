@@ -372,7 +372,10 @@ public final class Utilities {
 		if (MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.VILLAGE_UPDATE)) {
 			final BoundingBox box = block.getBoundingBox();
 			final double height = box.getMaxY() - box.getMinY();
-			return height > 0.42 && height <= 0.6 && block.getType().isSolid();
+			if( height > 0.42 && height <= 0.6 && block.getType().isSolid())
+			{
+				return true;
+			}
 		}
 		return isSlab(block) || isStair(block) || isWall(block) || block.getType() == XMaterial.SNOW.parseMaterial()
 				|| block.getType().name().endsWith("HEAD");
