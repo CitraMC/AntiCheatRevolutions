@@ -194,16 +194,14 @@ public final class UserManager {
 			return;
 		}
 
-		// Execute asynchronously then sync for thread safety
-		Bukkit.getScheduler().runTaskAsynchronously(AntiCheatRevolutions.getPlugin(), () -> {
+		Bukkit.getScheduler().runTask(AntiCheatRevolutions.getPlugin(), () -> {
 			PlayerPunishEvent event = new PlayerPunishEvent(user, actions);
 			Bukkit.getServer().getPluginManager().callEvent(event);
 			if (event.isCancelled()) {
 				return;
 			}
 
-			Bukkit.getScheduler().runTask(AntiCheatRevolutions.getPlugin(),
-					() -> processActions(user, player, actions, type, kickReason, warning, banReason));
+			processActions(user, player, actions, type, kickReason, warning, banReason);
 		});
 	}
 
