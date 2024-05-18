@@ -100,7 +100,7 @@ public final class BadPacketsCheck {
 		AntiCheatRevolutions.sendToMainThread(() -> {
 			EventListener.log(new CheckResult(CheckResult.Result.FAILED, message).getMessage(), player,
 					CheckType.BADPACKETS, null);
-			player.teleport(setback != null ? setback : player.getLocation());
+			player.teleport(Utilities.getSafeLocation(setback != null ? setback : player.getLocation()));
 		});
 	}
 

@@ -372,8 +372,7 @@ public final class Utilities {
 		if (MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.VILLAGE_UPDATE)) {
 			final BoundingBox box = block.getBoundingBox();
 			final double height = box.getMaxY() - box.getMinY();
-			if( height > 0.42 && height <= 0.6 && block.getType().isSolid())
-			{
+			if (height > 0.42 && height <= 0.6 && block.getType().isSolid()) {
 				return true;
 			}
 		}
@@ -1151,6 +1150,20 @@ public final class Utilities {
 	public static boolean isSolidBlock(Location location) {
 		Block block = location.getBlock();
 		return block.getType().isSolid();
+	}
+
+	public static Location getSafeLocation(final Location location) {
+		int lowestBlockY = 0;
+
+		if (MinecraftVersion.getCurrentVersion().isAtLeast(MinecraftVersion.CAVES_CLIFFS_2)) {
+			lowestBlockY = -64;
+		}
+
+		if (location.getY() <= lowestBlockY) {
+			location.setY(location.getWorld().getHighestBlockYAt(location));
+		}
+
+		return location;
 	}
 
 	static {
