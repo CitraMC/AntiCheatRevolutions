@@ -37,8 +37,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import com.citramc.anticheatrevolutions.command.CommandHandler;
 import com.citramc.anticheatrevolutions.config.Configuration;
 import com.citramc.anticheatrevolutions.event.BlockListener;
@@ -67,8 +65,6 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 	@Getter
 	private static ExecutorService executor;
 	@Getter
-	private static ProtocolManager protocolManager;
-	@Getter
 	private static UpdateManager updateManager;
 	@Getter
 	private static boolean floodgateEnabled;
@@ -87,16 +83,6 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 		int poolSize = Math.min(coreCount, 4); // Limit max threads to 4 or less
 		executor = Executors.newFixedThreadPool(poolSize);
 		Bukkit.getConsoleSender().sendMessage(PREFIX + "Executor pool initialized with " + poolSize + " threads");
-
-		// Check for ProtocolLib and disable plugin if missing
-		if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-			String errorMsg = PREFIX + ChatColor.RED
-					+ "ProtocolLib not found! AntiCheatRevolutions requires ProtocolLib to work, please download and install it.";
-			Bukkit.getConsoleSender().sendMessage(errorMsg);
-			Bukkit.getPluginManager().disablePlugin(this);
-		} else {
-			Bukkit.getConsoleSender().sendMessage(PREFIX + "ProtocolLib found. Plugin loading...");
-		}
 	}
 
 	@Override
@@ -111,9 +97,6 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 		setupCommands();
 		setupEnterprise();
 		restoreLevels();
-
-		// Setup ProtocolLib hooks
-		setupProtocol();
 
 		// Server version compatibility check
 		checkServerVersion();
@@ -134,7 +117,7 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 	private void setupListeners() {
 		eventList.addAll(Arrays.asList(
 				new PlayerListener(), new BlockListener(), new EntityListener(),
-				new VehicleListener(), new InventoryListener()));
+				new VehicleListener(), new InventoryListener(), new PacketListener()));
 		eventList.forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
 		verboseLog("All event listeners registered.");
 	}
@@ -190,12 +173,6 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 						// Reset so we don't keep sending the same value
 						playersKicked = 0;
 						return kicked;
-					}
-				}));
-				metrics.addCustomChart(new SimplePie("protocollib_version", new Callable<String>() {
-					@Override
-					public String call() throws Exception {
-						return Bukkit.getPluginManager().getPlugin("ProtocolLib").getDescription().getVersion();
 					}
 				}));
 				metrics.addCustomChart(new SimplePie("nms_version", new Callable<String>() {
@@ -275,37 +252,10 @@ public final class AntiCheatRevolutions extends JavaPlugin {
 		plugin = null;
 		manager = null;
 		executor = null;
-		protocolManager = null;
 		updateManager = null;
 		eventList = null;
 		config = null;
 		verboseLog("Static references cleared.");
-	}
-
-	private void setupProtocol() {
-		protocolManager = ProtocolLibrary.getProtocolManager();
-
-		if (protocolManager == null) {
-			verboseLog(
-					"Failed to obtain ProtocolManager from ProtocolLib. Check if ProtocolLib is properly installed.");
-			Bukkit.getPluginManager().disablePlugin(this);
-			return;
-		}
-
-		try {
-			registerPacketListeners();
-			verboseLog("ProtocolLib packet listeners registered successfully.");
-		} catch (Exception e) {
-			Bukkit.getLogger()
-					.severe("An error occurred while setting up ProtocolLib packet listeners: " + e.getMessage());
-			Bukkit.getPluginManager().disablePlugin(this);
-		}
-	}
-
-	private void registerPacketListeners() {
-		// Example of packet listener registration
-		PacketListener packetListener = new PacketListener(this);
-		protocolManager.addPacketListener(packetListener);
 	}
 
 	private void setupCommands() {

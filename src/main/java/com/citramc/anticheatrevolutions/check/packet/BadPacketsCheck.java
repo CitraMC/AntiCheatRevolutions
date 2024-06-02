@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +21,8 @@ package com.citramc.anticheatrevolutions.check.packet;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerMoveEvent;
 
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.check.Backend;
 import com.citramc.anticheatrevolutions.check.CheckResult;
@@ -35,12 +35,12 @@ import com.citramc.anticheatrevolutions.util.Utilities;
 
 public final class BadPacketsCheck {
 
-	public static void runCheck(final Player player, final PacketEvent event) {
+	public static void runCheck(final Player player, final PlayerMoveEvent event) {
 		if (event.isCancelled()) {
 			// Do not check if cancelled
 			return;
 		}
-		
+
 		final Backend backend = AntiCheatRevolutions.getManager().getBackend();
 		// Confirm if we should even check for BadPackets
 		if (!AntiCheatRevolutions.getManager().getCheckManager().willCheck(player, CheckType.BADPACKETS)
@@ -49,8 +49,11 @@ public final class BadPacketsCheck {
 		}
 
 		final User user = AntiCheatRevolutions.getManager().getUserManager().getUser(player.getUniqueId());
-		final PacketContainer packet = event.getPacket();
-		final float pitch = packet.getFloat().read(1);
+		final Location to = event.getTo();
+		if (to == null) {
+			return;
+		}
+		final float pitch = to.getPitch();
 		// Check for derp
 		if (Math.abs(pitch) > 90) {
 			flag(player, event, "had an illegal pitch", null);
@@ -67,10 +70,10 @@ public final class BadPacketsCheck {
 			return;
 		}
 
-		final double x = packet.getDoubles().read(0);
-		final double y = packet.getDoubles().read(1);
-		final double z = packet.getDoubles().read(2);
-		final float yaw = packet.getFloat().read(0);
+		final double x = to.getX();
+		final double y = to.getY();
+		final double z = to.getZ();
+		final float yaw = to.getYaw();
 		// Create location from new data
 		final Location previous = player.getLocation().clone();
 		// Only take horizontal distance
@@ -83,18 +86,21 @@ public final class BadPacketsCheck {
 		if (distanceHorizontal > maxDistanceHorizontal) {
 			flag(player, event,
 					"moved too far between packets (HT, distance=" + Utilities.roundDouble(distanceHorizontal, 1)
-							+ ", max=" + Utilities.roundDouble(maxDistanceHorizontal, 1) + ")", user.getGoodLocation(previous));
+							+ ", max=" + Utilities.roundDouble(maxDistanceHorizontal, 1) + ")",
+					user.getGoodLocation(previous));
 			return;
 		}
 
 		if (distanceVertical < -4.0D && user.getVelocityTracker().getVertical() == 0.0D) {
 			flag(player, event, "moved too far between packets (VT, distance="
-					+ Utilities.roundDouble(Math.abs(distanceVertical), 1) + ", max=4.0)", user.getGoodLocation(previous));
+					+ Utilities.roundDouble(Math.abs(distanceVertical), 1) + ", max=4.0)",
+					user.getGoodLocation(previous));
 			return;
 		}
 	}
 
-	private static void flag(final Player player, final PacketEvent event, final String message, final Location setback) {
+	private static void flag(final Player player, final PlayerMoveEvent event, final String message,
+			final Location setback) {
 		event.setCancelled(true);
 		// We are currently not in the main server thread, so switch
 		AntiCheatRevolutions.sendToMainThread(() -> {

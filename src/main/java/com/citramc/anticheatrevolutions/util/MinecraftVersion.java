@@ -26,8 +26,6 @@ import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.utility.SnapshotVersion;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
@@ -38,6 +36,10 @@ import com.google.common.collect.Ordering;
  * @author Kristian
  */
 public class MinecraftVersion implements Comparable<MinecraftVersion>, Serializable {
+	private static final String MINIMUM_MINECRAFT_VERSION = "1.8";
+	private static final String MAXIMUM_MINECRAFT_VERSION = "1.20.6";
+	private static final String MINECRAFT_LAST_RELEASE_DATE = "2024-05-01";
+
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -46,9 +48,9 @@ public class MinecraftVersion implements Comparable<MinecraftVersion>, Serializa
 	private static final Pattern VERSION_PATTERN = Pattern.compile(".*\\(.*MC.\\s*([a-zA-z0-9\\-.]+).*");
 
 	/**
-	 * Version 1.20.5 - the armored paws drop
+	 * Version 1.20.6 - the armored paws drop
 	 */
-	public static final MinecraftVersion ARMORED_PAWS = new MinecraftVersion("1.20.5");
+	public static final MinecraftVersion ARMORED_PAWS = new MinecraftVersion("1.20.6");
 
 	/**
 	 * Version 1.20.4 - the decorated pot update
@@ -215,9 +217,9 @@ public class MinecraftVersion implements Comparable<MinecraftVersion>, Serializa
 				snapshot = new SnapshotVersion(section[0]);
 				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
-				MinecraftVersion latest = new MinecraftVersion(ProtocolLibrary.MAXIMUM_MINECRAFT_VERSION, false);
+				MinecraftVersion latest = new MinecraftVersion(MAXIMUM_MINECRAFT_VERSION, false);
 				boolean newer = snapshot.getSnapshotDate().compareTo(
-						        format.parse(ProtocolLibrary.MINECRAFT_LAST_RELEASE_DATE)) > 0;
+						        format.parse(MINECRAFT_LAST_RELEASE_DATE)) > 0;
 						        
 		        numbers[0] = latest.getMajor();
 		        numbers[1] = latest.getMinor() + (newer ? 1 : -1);

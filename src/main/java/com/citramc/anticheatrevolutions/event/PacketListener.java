@@ -20,75 +20,53 @@
 package com.citramc.anticheatrevolutions.event;
 
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.injector.temporary.TemporaryPlayer;
-import com.comphenix.protocol.wrappers.EnumWrappers.PlayerDigType;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.block.Action;
 import com.citramc.anticheatrevolutions.check.movement.NoSlowCheck;
 import com.citramc.anticheatrevolutions.check.packet.BadPacketsCheck;
 import com.citramc.anticheatrevolutions.check.packet.MorePacketsCheck;
 
-public final class PacketListener extends PacketAdapter {
+public final class PacketListener implements Listener {
 
-	public PacketListener(final Plugin plugin) {
-		super(plugin, ListenerPriority.LOWEST, PacketType.Play.Client.POSITION, PacketType.Play.Client.POSITION_LOOK,
-				PacketType.Play.Client.LOOK, PacketType.Play.Server.POSITION, PacketType.Play.Client.BLOCK_DIG);
-	}
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (player == null || !player.isOnline()) {
+            return;
+        }
 
-	@Override
-	public void onPacketReceiving(final PacketEvent event) {
-		final Player player = event.getPlayer();
-		if (player == null || !player.isOnline()) {
-			return;
-		}
-		
-		// Check if we have an actual player object
-		if (player instanceof TemporaryPlayer) {
-			return;
-		}
-		
-		final PacketType type = event.getPacketType();
-		final PacketContainer packet = event.getPacket();
-		if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.POSITION_LOOK) {
-			// Run MorePackets check
-			MorePacketsCheck.runCheck(player, event);
-			// Run BadPackets check
-			BadPacketsCheck.runCheck(player, event);
-			return;
-		}
-		
-		if (event.getPacketType() == PacketType.Play.Client.BLOCK_DIG) {
-			if (packet.getPlayerDigTypes().read(0) == PlayerDigType.RELEASE_USE_ITEM) {
-				// Run NoSlow check
-				NoSlowCheck.runCheck(event.getPlayer(), event);
-			}
-			
-			return;
-		}
-	}
+        // Run MorePackets check
+        MorePacketsCheck.runCheck(player, event);
+        // Run BadPackets check
+        BadPacketsCheck.runCheck(player, event);
+    }
 
-	@Override
-	public void onPacketSending(final PacketEvent event) {
-		final Player player = event.getPlayer();
-		if (player == null || !player.isOnline()) {
-			return;
-		}
-		
-		// Check if we have an actual player object
-		if (player instanceof TemporaryPlayer) {
-			return;
-		}
-		
-		final PacketType type = event.getPacketType();
-		if (type == PacketType.Play.Server.POSITION) {
-			// Compensate for teleport
-			MorePacketsCheck.compensate(player);
-		}
-	}
-	
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            // Run NoSlow check
+            NoSlowCheck.runCheck(player, event);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Player player = event.getPlayer();
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+
+        // Compensate for teleport
+        MorePacketsCheck.compensate(player);
+    }
 }
+

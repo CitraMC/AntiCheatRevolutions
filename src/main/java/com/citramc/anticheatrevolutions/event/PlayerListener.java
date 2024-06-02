@@ -76,11 +76,11 @@ import com.citramc.anticheatrevolutions.check.player.IllegalInteractCheck;
 import com.citramc.anticheatrevolutions.check.player.NoFallCheck;
 import com.citramc.anticheatrevolutions.manage.AntiCheatManager;
 import com.citramc.anticheatrevolutions.util.Distance;
+import com.citramc.anticheatrevolutions.util.MinecraftVersion;
 import com.citramc.anticheatrevolutions.util.Permission;
 import com.citramc.anticheatrevolutions.util.User;
 import com.citramc.anticheatrevolutions.util.Utilities;
 import com.citramc.anticheatrevolutions.util.VersionLib;
-import com.comphenix.protocol.utility.MinecraftVersion;
 
 public final class PlayerListener extends EventListener {
 

@@ -2,6 +2,7 @@
  * AntiCheatRevolutions for Bukkit and Spigot.
  * Copyright (c) 2012-2015 AntiCheat Team
  * Copyright (c) 2016-2022 Rammelkast
+ * Copyright (c) 2024 CitraMC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerInteractEvent;
 
-import com.comphenix.protocol.events.PacketEvent;
 import com.citramc.anticheatrevolutions.AntiCheatRevolutions;
 import com.citramc.anticheatrevolutions.check.CheckResult;
 import com.citramc.anticheatrevolutions.check.CheckType;
@@ -38,16 +39,16 @@ public final class NoSlowCheck {
 	public static final Map<UUID, Long> LAST_RELEASE = new HashMap<UUID, Long>();
 	public static final Map<UUID, Integer> VIOLATIONS = new HashMap<UUID, Integer>();
 
-	public static void runCheck(final Player player, final PacketEvent event) {
+	public static void runCheck(final Player player, final PlayerInteractEvent event) {
 		if (event.isCancelled()) {
 			// Do not check if cancelled
 			return;
 		}
-		
+
 		if (!AntiCheatRevolutions.getManager().getCheckManager().willCheck(player, CheckType.NOSLOW)) {
 			return;
 		}
-		
+
 		final UUID uuid = player.getUniqueId();
 		final User user = AntiCheatRevolutions.getManager().getUserManager().getUser(uuid);
 		final MovementManager movementManager = user.getMovementManager();
@@ -73,7 +74,7 @@ public final class NoSlowCheck {
 		}
 	}
 
-	private static void flag(final Player player, final PacketEvent event, final String message) {
+	private static void flag(final Player player, final PlayerInteractEvent event, final String message) {
 		event.setCancelled(true);
 		// We are currently not in the main server thread, so switch
 		AntiCheatRevolutions.sendToMainThread(new Runnable() {

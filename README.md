@@ -4,8 +4,7 @@ AntiCheatRevolutions helps server admins combat the use of hacked clients and sp
 
 Installation
 ------------
-AntiCheatRevolutions **requires** you to have ProtocolLib. You can download it [here](https://www.spigotmc.org/resources/protocollib.1997/).
-Simply drag and drop the AntiCheatRevolutions and ProtocolLib jars in your plugin folder. You can now use AntiCheatRevolutions, but be sure to have a look at the configuration files, which allow you to change every aspect of the plugin.
+Simply drag and drop the AntiCheatRevolutions jar in your plugin folder. You can now use AntiCheatRevolutions, but be sure to have a look at the configuration files, which allow you to change every aspect of the plugin.
 
 Bug Reporting
 ------------
@@ -15,7 +14,6 @@ Issues should be filed by hitting the [issues](https://github.com/CitraMC/AntiCh
 Please include the following information with your issue, this allows me to fix it quicker;
 * Your AntiCheatRevolutions version
 * Your server implementation (Bukkit/Spigot/Other) and it's version
-* Your ProtocolLib version
 * Whether or not you are using protocol hacks (ViaVersion etc.)
 * Any logs relating to the issue
 
