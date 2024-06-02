@@ -70,9 +70,8 @@ public final class UserManager {
 	 *
 	 * @return List of users
 	 */
-	@SuppressWarnings("unchecked")
 	public List<User> getUsers() {
-		return (List<User>) users;
+		return users.values().stream().collect(Collectors.toList());
 	}
 
 	/**
@@ -108,9 +107,9 @@ public final class UserManager {
 	 *
 	 * @param group Group to find users of
 	 */
-	@SuppressWarnings("unchecked")
 	public List<User> getUsersInGroup(final Group group) {
-		return ((List<User>) this.users).parallelStream().filter(user -> user.getGroup() == group)
+		return users.values().parallelStream()
+				.filter(user -> user.getGroup() == group)
 				.collect(Collectors.toList());
 	}
 
