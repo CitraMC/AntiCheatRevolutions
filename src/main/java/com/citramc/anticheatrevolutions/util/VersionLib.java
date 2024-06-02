@@ -40,7 +40,11 @@ public class VersionLib {
 	private static final List<String> SUPPORTED_VERSIONS;
 
 	public static String getVersion() {
-		return Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
+		try {
+			return Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
+		} catch (Exception e) {
+			return Bukkit.getServer().getClass().getPackage().getSpecificationVersion();
+		}
 	}
 
 	public static boolean isSupported() {
@@ -158,6 +162,7 @@ public class VersionLib {
 
 	static {
 		SUPPORTED_VERSIONS = Arrays.asList(new String[] {
+				"1.20",
 				"v1_20", "v1_19",
 				"v1_18", "v1_17", "v1_16", "v1_15", "v1_14", "v1_13", "v1_12",
 				"v1_11", "v1_10", "v1_9", "v1_8"
